@@ -1,30 +1,122 @@
 ---
-title: "Loading Data into a Data Frame"
-author: "Alyssa"
+title: "Simple Analysis of Bob Ross Paintings"
+author: "Alyssa Gurkas"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cerulean 
 ---
 
-```{r load-library, include=FALSE}
+# R Pubs Link: https://rpubs.com/agurkas/data-607-assignment-1
+# Github Repository: https://github.com/amgurkas/data-acquisition 
+
+```{r load-library, echo=FALSE, include=FALSE, warnings=FALSE, message=FALSE}
 library(tidyverse)
+library(ggplot2)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r load-data, include=TRUE}
-read_csv("")
+```{r load-data, echo=FALSE, include=FALSE, warnings=FALSE, message=FALSE}
+data <- read_csv("data/elements-by-episode.csv")
 ```
 
-## Including Plots
+## Overview
 
-You can also embed plots, for example:
+This report will conduct exploratory data analysis using data from 
+FiveThirtyEight's 'elements-by-episode' dataset. This dataset tracks 67 
+different elements found in Bob Ross paintings featured in the TV show, 
+"The Joy of Painting". For more information about this dataset and 
+a statistical analysis of the work of boss, please see [this article](https://fivethirtyeight.com/features/a-statistical-analysis-of-the-work-of-bob-ross/).
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+## Summary of the data
+To better understand the dataset, we can run the following to return a vector 
+showing how many rows and columns are within our dataset titled `data`:
+```{r data-dim, echo=TRUE, include=TRUE}
+dim(data)
+```
+To view summary statistics for the first six columns of the 
+dataframe `data`, we run the following:
+
+```{r summary-stats, echo=TRUE, include=TRUE}
+summary(data[1:6])
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+For the columns that describe the paintings, the data are binary, meaning if
+an element is present in the painting, the value will be recorded as 1. If the
+element is not present, the value will be 0. Since there are 69 columns present,
+it may be better to focus on a particular element, such as whether the paintings 
+are framed. 
+
+## Basic Exploratory Data Analysis
+Currently, the data are at the episode level, meaning each row depicts the 
+elements of a painting present in a given episode. For this report, we
+are exploring which paintings are framed and will add a column that 
+records which season the painting was featured in:
+ 
+```{r basic-eda, echo=TRUE}
+# creating a new column titled 'SEASON'
+data_v2 <- data |> 
+  mutate(SEASON = substr(EPISODE, 2,3)) 
+
+# selecting columns that contain the term FRAME
+data_v3 <- data_v2 |> 
+  select(EPISODE,TITLE,SEASON, contains("FRAME"))
+```
+
+To calculate the percentage of total episodes that include a framed painting, 
+and the percentage of total episodes that include an unframed painting we 
+run the following:
+
+```{r frame-stats, echo=TRUE, include=TRUE}
+# calculating sum of framed paintings
+sum(data_v3$FRAMED == 0)/sum(data_v3$FRAMED == 0|1)*100
+
+# calculating sum of unframed paintings
+sum(data_v3$FRAMED == 1)/sum(data_v3$FRAMED == 0|1)*100
+```
+
+```{r subset-frame, echo=FALSE, include=FALSE, warnings=FALSE, message=FALSE}
+# data frame of framed paintings
+data_v4 <- data_v3 |> 
+  filter(FRAMED != 0) |> 
+  select(-FRAMED)
+
+frame_type <- data_v4 |> 
+  select(contains("FRAME")) |> 
+  colnames()
+```
+
+```{r painting-frame-analysis, echo=FALSE, include=FALSE, warnings=FALSE, message=FALSE}
+data_v5 <- data_v4 |> 
+  pivot_longer(
+    cols= frame_type, names_to = "FRAME_TYPE", values_to = "INDICATOR"
+  ) |> 
+  group_by(SEASON,FRAME_TYPE) |> 
+  summarise(COUNT = sum(INDICATOR))
+
+data_v5 |> 
+  filter(COUNT > 1)
+```
+
+```{r bar-chart-framed, echo=FALSE, include=TRUE, warnings=FALSE, message=FALSE}
+bar_chart_df <- data_v3 |> 
+  mutate(FRAMED = case_when(FRAMED == 0 ~"No Frame", 
+                            FRAMED == 1 ~"Framed")) |> 
+  select(EPISODE,SEASON,FRAMED,TITLE) |> 
+  rename("Framed?" = "FRAMED")
+
+ggplot(bar_chart_df, aes(x=`Framed?`, fill=`Framed?`))+
+  geom_bar()+
+  geom_text(stat='count', aes(label=after_stat(count)), vjust=-.25)+
+  xlab("Painting Type")+
+  ylab("Count")+
+  ggtitle("Bob Ross Paintings by Frame")+
+  theme_minimal()
+```
+
+## Findings 
+Bob Ross did not typically frame his paintings. Frames were only featured in 
+about 13% of the episodes. Additionally, Bob Ross did not feature a 
+framed painting until Season 4, using a circle frame. When Bob Ross incorporated 
+a frame for a featured painting, he most commonly used the oval frame. 
