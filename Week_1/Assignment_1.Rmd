@@ -9,8 +9,9 @@ output:
     theme: cerulean 
 ---
 
-# R Pubs Link: https://rpubs.com/agurkas/data-607-assignment-1
-# Github Repository: https://github.com/amgurkas/data-acquisition 
+[R Pubs Link](https://rpubs.com/agurkas/data-607-assignment-1)
+<br>
+[Github Repository](https://github.com/amgurkas/data-acquisition) 
 
 ```{r load-library, echo=FALSE, include=FALSE, warnings=FALSE, message=FALSE}
 library(tidyverse)
@@ -18,7 +19,8 @@ library(ggplot2)
 ```
 
 ```{r load-data, echo=FALSE, include=FALSE, warnings=FALSE, message=FALSE}
-data <- read_csv("data/elements-by-episode.csv")
+data_url <- "https://raw.githubusercontent.com/amgurkas/data-acquisition/refs/heads/main/Week_1/data/elements-by-episode.csv"
+data <- read_csv(data_url)
 ```
 
 ## Overview
