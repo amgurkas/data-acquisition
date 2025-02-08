@@ -1,0 +1,32 @@
+
+# Load necessary libraries
+library(digest)     # For generating the hash
+library(clipr)      # For copying to clipboard
+
+# The string to hash
+input_string <- "ALYSSA.GURKAS84"
+
+# Generate the hash using SHA-256
+hash_hex <- digest(input_string, algo = "sha256", serialize = FALSE)
+
+# Declare a variable with only a quarter of the resulting hash
+quarter_hash <- substr(hash_hex, 1, nchar(hash_hex) %/% 4)
+
+# Save the result to the clipboard
+write_clip(quarter_hash)
+
+# Optional: Print the quarter hash
+cat("Quarter hash copied to clipboard:", quarter_hash, "\n")
+
+
+library(RMySQL)
+
+mysqlconnection = dbConnect(
+  RMySQL::MySQL(),
+  dbname='CUNY',
+  host='cuny607sql.mysql.database.azure.com',
+  port=3306,
+  user=input_string,
+  password=hash_hex
+)
+
