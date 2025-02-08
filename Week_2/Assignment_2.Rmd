@@ -19,6 +19,7 @@ write_clip(quarter_hash)
 cat("Quarter hash copied to clipboard:", quarter_hash, "\n")
 
 
+
 library(RMySQL)
 
 mysqlconnection = dbConnect(
