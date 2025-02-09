@@ -8,10 +8,8 @@ output:
     toc_float: true
     theme: cerulean 
 ---
-
-[R Pubs Link](https://rpubs.com/agurkas/data-607-assignment-2)
-<br>
 [Github Repository](https://github.com/amgurkas/data-acquisition) 
+<br>
 
 ## Overview 
 This R Markdown will explain how to connect to a MySQL Database, create a table,
@@ -102,7 +100,6 @@ ggplot(movieRatingData_v2)+
   theme(legend.position="none",
         strip.background = element_rect(
      color="grey", fill="white", size=.75, linetype="solid"))
-  
 ```
 
 ## Note about missing data
