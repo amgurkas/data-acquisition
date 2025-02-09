@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 password-hash.R
+.Renvironment
+Week_2/rsconnect/
+Week_2/Assignment_2.html

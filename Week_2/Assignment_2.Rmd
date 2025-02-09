@@ -15,7 +15,7 @@ output:
 This R Markdown will explain how to connect to a MySQL Database, create a table,
 and visualize the data.
 
-```{r load-library}
+```{r load-library, include=FALSE,warning=FALSE}
 library(RMySQL)
 library(tidyverse)
 library(ggplot2)
@@ -27,16 +27,18 @@ library(RColorBrewer)
 For this exercise, 12 survey recipients were contacted to rate six popular 
 movies. The respondents were given instructions to rate the movies with five as
 the highest rating, and to skip movies they had not seen.
-
+<br>
 In the code below, the RStudio API package is used to generate a pop-up message 
 requesting the username and password for the MySQL database. However, you can
 also use the .REnviron to save the respective username and password. 
-```{r password-username-entry, include=TRUE}
+
+```{r password-username-entry, include=TRUE,warning=FALSE}
 username <- rstudioapi::askForPassword("Database username")
 password <- rstudioapi::askForPassword("Database password")
 ```
 
-```{r mysql-connection, include=FALSE}
+
+```{r mysql-connection, include=FALSE,warning=FALSE}
 mydb <- dbConnect(MySQL(), user = username, 
                   password = password, 
                   dbname = 'alyssa.gurkas84', 
@@ -50,7 +52,7 @@ to create a MySQL table, with the connection established in the step above.
 To better understand the dataset, the 'DESCRIBE' sql function can be used, 
 additionally, the head() and glimpse() functions can be used to get a quick 
 understanding of the dataset. 
-```{r create-movie-database, include=TRUE}
+```{r create-movie-database, include=TRUE,warning=FALSE}
 movieRatingData <- read.csv(file="Movie_Rating_Responses.csv", 
                             header=TRUE, 
                             sep=",")
@@ -79,7 +81,7 @@ dataframe longer, so we can create a bar graph depicting the received responses.
 
 Using the 'ggplot2' package, bar charts for each of the movies are plotted, in 
 one object. This can be accomplished by using the 'facet_wrap()' argument.
-```{r plotting-data, echo=TRUE, include=TRUE}
+```{r plotting-data, include=TRUE,warning=FALSE,message=FALSE}
 colnames(sql_table)
 
 movieRatingData_v2 <- sql_table |> 
