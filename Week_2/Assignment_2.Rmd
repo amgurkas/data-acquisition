@@ -1,0 +1,113 @@
+---
+title: "Using R and SQL to Analyze My Favorite Movies"
+author: "Alyssa Gurkas"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cerulean 
+---
+
+[R Pubs Link](https://rpubs.com/agurkas/data-607-assignment-2)
+<br>
+[Github Repository](https://github.com/amgurkas/data-acquisition) 
+
+## Overview 
+This R Markdown will explain how to connect to a MySQL Database, create a table,
+and visualize the data.
+
+```{r load-library}
+library(RMySQL)
+library(tidyverse)
+library(ggplot2)
+library(rstudioapi)
+library(RColorBrewer)
+```
+
+## Data Collection
+For this exercise, 12 survey recipients were contacted to rate six popular 
+movies. The respondents were given instructions to rate the movies with five as
+the highest rating, and to skip movies they had not seen.
+
+In the code below, the RStudio API package is used to generate a pop-up message 
+requesting the username and password for the MySQL database. However, you can
+also use the .REnviron to save the respective username and password. 
+```{r password-username-entry, include=TRUE}
+username <- rstudioapi::askForPassword("Database username")
+password <- rstudioapi::askForPassword("Database password")
+```
+
+```{r mysql-connection, include=FALSE}
+mydb <- dbConnect(MySQL(), user = username, 
+                  password = password, 
+                  dbname = 'alyssa.gurkas84', 
+                  host = "cuny607sql.mysql.database.azure.com")
+```
+
+The survey responses were collected in Google Forms, and were then exported to a 
+.csv file. In the code below, the survey responses are read into R, and then used 
+to create a MySQL table, with the connection established in the step above.
+<br>
+To better understand the dataset, the 'DESCRIBE' sql function can be used, 
+additionally, the head() and glimpse() functions can be used to get a quick 
+understanding of the dataset. 
+```{r create-movie-database, include=TRUE}
+movieRatingData <- read.csv(file="Movie_Rating_Responses.csv", 
+                            header=TRUE, 
+                            sep=",")
+
+dbWriteTable(mydb, 
+             value = movieRatingData, 
+             row.names = FALSE, 
+             name = "movie_ratings", 
+             append = TRUE )
+
+sql_table <- dbReadTable(mydb, "movie_ratings")
+
+dbSendQuery(mydb, "DESCRIBE movie_ratings") |>  
+  fetch()
+
+head(sql_table)
+glimpse(sql_table)
+
+```
+
+Then, to visualize the data, first it is helpful to know what the column names
+are in the MySQL table, "movie_ratings". The column names are used to pivot the
+dataframe longer, so we can create a bar graph depicting the received responses.
+
+<br>
+
+Using the 'ggplot2' package, bar charts for each of the movies are plotted, in 
+one object. This can be accomplished by using the 'facet_wrap()' argument.
+```{r plotting-data, echo=TRUE, include=TRUE}
+colnames(sql_table)
+
+movieRatingData_v2 <- sql_table |> 
+  pivot_longer( cols = c("Shawshank.Redemption",
+                         "The.Lion.King",
+                         "Step.Brothers",
+                         "Pulp.Fiction",
+                         "Fight.Club"),
+                names_to = "Movies", values_to = "Rating") |> 
+  group_by(Movies,Rating) |> 
+  summarize(Count=n()) |> 
+  mutate(Movies=str_replace_all(Movies,"\\."," ")) 
+
+ggplot(movieRatingData_v2)+
+  geom_bar(aes(x=Rating,y=Count, fill=Movies),stat="identity")+
+  scale_fill_brewer(palette = "Pastel1")+
+  facet_wrap(~Movies)+
+  theme(legend.position="none",
+        strip.background = element_rect(
+     color="grey", fill="white", size=.75, linetype="solid"))
+  
+```
+
+## Note about missing data
+Survey respondents were instructed to leave responses blank if they had not seen 
+a movie. This meant that for some movies, there are missing data. For this
+exercise, missing data was ignored. If more data about the respondents was 
+collected, for example, demographic data, estimates for missing data may have 
+been included through imputations.
