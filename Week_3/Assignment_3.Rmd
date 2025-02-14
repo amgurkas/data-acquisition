@@ -5,3 +5,21 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+```{r load-librarys, include=FALSE}
+library(tidyverse)
+library(eia)
+library(lubridate)
+```
+
+```{r config-API-key, include=FALSE}
+eia_set_key(Sys.getenv("EIA_API_KEY"))
+```
+
+```{r eia, include=TRUE}
+# getting International Energy Outlook Data from DOE/EIA
+# documentation found here: https://docs.ropensci.org/eia/articles/eia.html#eia-data
+# max rows returned is 5000
+
+eia_data("ieo/2023")
+
+```
