@@ -5,21 +5,67 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+# Understanding Database Normalization
+Database normalization is a method to organize data in a consistent way. 
+Normalizing data can help ensure there are not duplicate entries and maintain 
+data integrity. Using this method, the data is organized in many tables, linked
+together by relationships (such as a unique id or key). There are a few levels
+to normalized datasets: 1NF, 2NF, 3NF. 
+
 ```{r load-librarys, include=FALSE}
 library(tidyverse)
-library(eia)
-library(lubridate)
+library(RSocrata)
+library(DT)
+library(janitor)
 ```
 
-```{r config-API-key, include=FALSE}
-eia_set_key(Sys.getenv("EIA_API_KEY"))
+<br> 
+If a database were to be considered 1NF, or in the first normal form, it would 
+be meet the following criteria:
+1. Each cell does not hold more than one value
+2. Every row has a unique identifier
+3. There are no duplicated entries
+4. Each column only has one value for each row in the table
+<br>
+
+An example dataset that is in the 1NF form is New York State's Energy Efficiency
+Completed Projects Dataset:
+```{r data-connection, include=FALSE}
+# completed energy efficiency projects in NY 
+# documentation here: https://data.ny.gov/Energy-Environment/Energy-Efficiency-Completed-Projects-Beginning-198/erjw-j2zx/about_data
+ny_ee_proj <- read.socrata("https://data.ny.gov/resource/erjw-j2zx.json") 
+
+n_distinct(ny_ee_proj$project_code)
+nrow(ny_ee_proj)
+
+df_1nf <- ny_ee_proj %>% 
+  group_by(agency) %>% 
+  mutate(agency_id =cur_group_id()) %>% 
+  ungroup()
+
+df_1nf_clean <- clean_names(df_1nf, "title")
 ```
 
-```{r eia, include=TRUE}
-# getting International Energy Outlook Data from DOE/EIA
-# documentation found here: https://docs.ropensci.org/eia/articles/eia.html#eia-data
-# max rows returned is 5000
-
-eia_data("ieo/2023")
-
+```{r dt-1NF, echo=TRUE}
+datatable(head(df_1nf_clean,
+              class = c('cell-border stripe','compact')))
 ```
+
+<br>
+An example of a dataset that is in the 2NF form is the same dataset, 
+but transformed:
+```{r 2NF, include=TRUE}
+# agency table
+# removing values where Agency title is empty (NA)
+df_2nf_ex1 <- df_1nf %>% 
+  select(agency_id,agency,address,city,zip,address_ext) %>% 
+  distinct() %>% 
+  drop_na(agency) %>% 
+  arrange(agency_id) 
+
+# Energy Project Table
+df_2nf_ex2 <- df_1nf %>% 
+  select(-agency,-address,-city,-zip,-address_ext) %>% 
+  relocate(agency_id)
+```
+
