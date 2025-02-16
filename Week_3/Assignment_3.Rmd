@@ -52,7 +52,7 @@ datatable(head(df_1nf_clean,
 ```
 
 <br>
-An example of a dataset that is in the 2NF form is the same dataset, 
+An example of a datasets that are within the 2NF form is the same dataset, 
 but transformed:
 ```{r 2NF, include=TRUE}
 # agency table
@@ -68,4 +68,81 @@ df_2nf_ex2 <- df_1nf %>%
   select(-agency,-address,-city,-zip,-address_ext) %>% 
   relocate(agency_id)
 ```
+
+
+<br> 
+
+To achieve an 3NF form, the database should be in the second form (2NF), and
+have no transitive partial dependency. This means [insert here]. For example,
+the code below transforms the data to the third form:
+```{r 3NF, include=TRUE}
+# here will have code that transforms the data to the 3rd form
+
+```
+
+# Character Manipulation 
+In this section of the assignment, using 538's data from the article, [The Economic Guide To Picking A College Major](https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/), we will identify which majors contain the terms "data" or "statistics". 
+
+<br>
+
+To do this, first, you should read in the data, which is hosted on [538's Github Page](https://github.com/fivethirtyeight/data/blob/master/college-majors/majors-list.csv).
+```{r load-college-majors, include=TRUE, messages=FALSE}
+majors_data <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/refs/heads/master/college-majors/majors-list.csv")
+```
+
+Then, using the stringr package, we can filter the data to only include majors that incorporate the terms "data" or "statistics": 
+```{r str-detect-ex, include=TRUE}
+majors_data_filtered <- majors_data %>% 
+  filter(str_detect(Major,"DATA|STATISTICS"))
+```
+
+This creates a dataframe with three majors:
+```{r data-stat-majors, include=TRUE, echo=TRUE}
+majors_data_filtered$Major
+```
+
+## Regex Part 1: 
+In the assignment instructions, there is an exercise to translate the following
+regular expressions in layman's terms:
+1. (.)\1\1
+2.  "(.)(.)\\2\\1"
+3. (..)\1
+4. "(.).\\1.\\1"
+5.  "(.)(.)(.).*\\3\\2\\1"
+
+<br>
+
+## Answers: 
+
+1. The "(.)" signifies a group, "\1" signifies a character, and the second "\1"
+signifies a matching character. This means that a pattern following this regular
+expression could be "aaa", "111" or "...".
+2. This regular expression means there are two groups, depicted by the "(.)"
+symbols. The "\2" means the exact same character that appeared in the
+second group appears again. So, an example expression that matches this pattern
+could be "ceec", "1221", or "woow".
+3. The (..) means there is a group with two characters. The "\1" means that it 
+matches two characters. Therefore, this pattern matches two consecutive 
+identical pairs of characters. This could be "abab", "3434", or "aaaa". 
+4. "(.).\\1.\\1" is a pattern where there is a repeating character that appears
+three times with a character in between each repetition. A string following this
+pattern is "1_1_1", or "abaca".
+5. This pattern can be explained as one where there are three groups, that occur
+twice, however the second time the group appears, it is mirrored. An example of 
+a string that matches this pattern is "123xxxx321".
+
+## Regex Part 2
+In this part of the assignment, there are instructions to construct regular 
+expressions to match words that:
+
+1. Start and end with the same character.
+2. Contain a repeated pair of letters (e.g. "church" contains "ch" repeated 
+twice.)
+3. Contain one letter repeated in at least three places (e.g. "eleven" contains 
+three "e"s.)
+
+## Answers
+1. ^(.).*\\1$
+2. \b(..).*?\1\b
+3. \b.*([a-zA-Z]).*\1.*\1.*\b
 
