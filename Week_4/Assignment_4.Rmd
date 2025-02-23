@@ -30,7 +30,7 @@ airline_data <- read_csv(data)
 
 To demonstrate tidy data, we can work with an example dataset showing airline
 arrival delays for America West Airlines and Alaska Airlines:
-
+![Airline Data](/Week_4/airline_data.png)
 
 ```{r tidying-data}
 #check that this should be titled tidying (versus cleaning or another term)
