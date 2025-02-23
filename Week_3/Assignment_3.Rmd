@@ -52,7 +52,11 @@ df_1nf <- ny_ee_proj %>%
 df_1nf_clean <- clean_names(df_1nf, "title")
 
 head(df_1nf_clean)
+
+#below should include table of the 1NF dataset
+#knitr::kable(CurrentMonthbyOrgTable, format ="markdown")
 ```
+
 
 <br>
 An example of a datasets that are within the 2NF form is the same dataset, 
@@ -70,6 +74,9 @@ df_2nf_ex1 <- df_1nf %>%
 df_2nf_ex2 <- df_1nf %>% 
   select(-agency,-address,-city,-zip,-address_ext) %>% 
   relocate(agency_id)
+
+#below should include table of the 1NF dataset
+#knitr::kable(CurrentMonthbyOrgTable, format ="markdown")
 ```
 
 
@@ -89,7 +96,8 @@ df_3nf_ex1_projectcode <- df_2nf_ex2 |>
 df_3nf_ex2_projects <- df_2nf_ex2 |>
   select(-project_name)
 
-
+#below should include table of the 1NF dataset
+#knitr::kable(CurrentMonthbyOrgTable, format ="markdown")
 ```
 
 # Character Manipulation 

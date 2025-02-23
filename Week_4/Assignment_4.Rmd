@@ -1,0 +1,77 @@
+---
+  title: "Assignment 3"
+author: "Alyssa Gurkas"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+pdf_document: default
+---
+# Tidying and Transforming Data
+Tidying data means the data follows a consistent structure that makes it easier 
+to manipulate, analyze, and visualize. A dataset is considered tidy if it 
+follows these three rules:
+1. Each variable forms a column 
+2. Each observation forms a row 
+3. Each value has its own cell
+
+```{r load-libraries}
+library(tidyverse)
+library(RSocrata)
+library(janitor)
+library(gsheet)
+```
+
+```{r load-data}
+url <- 'docs.google.com/spreadsheets/d/1voYjtCYl1bHFKC-LfLyrWmkP5jeSVXTLK4Z2W12wth8'
+data <- gsheet2text(url, format='csv')
+airline_data <- read_csv(data)
+```
+<br>
+
+To demonstrate tidy data, we can work with an example dataset showing airline
+arrival delays for America West Airlines and Alaska Airlines:
+
+
+```{r tidying-data}
+#check that this should be titled tidying (versus cleaning or another term)
+
+airline_data_cleaned <- airline_data |>
+                            remove_empty("rows") |>
+                            rename("Airline" = "...1",
+                                   "Type" = "...2")
+
+
+airline_data_cleaned[2,1] <- "ALASKA"
+airline_data_cleaned[4,1] <- "AM WEST"
+
+airline_data_cleaned <- airline_data_cleaned |> 
+                            pivot_longer( cols = c("Los Angeles",
+                                                   "Phoenix", 
+                                                   "San Diego",
+                                                   "San Francisco",
+                                                   "Seattle"),
+                                                   names_to= "Cities", 
+                                                   values_to="Minutes")
+```
+
+```{r plot-by-city}
+delays <- airline_data_cleaned |> 
+  filter(Type =="delayed")
+
+alaska_d <- delays |> 
+  filter(Airline =="ALASKA")
+
+amwest_d <- delays |> 
+  filter(Airline=="AM WEST")
+
+ggplot(data = delays, aes(x=Minutes, fill="pastel")) +
+geom_histogram(bins=30) +
+facet_grid(rows=vars(`Airline`))+
+theme(legend.position="none")
+```
+
+```{r summary-stats}
+delays |> 
+group_by(Airline) |> 
+summarise(median_ad = median(Minutes), mean_ad=mean(Minutes),iqr_ad = IQR(Minutes), var_ad = var(Minutes))
+```
