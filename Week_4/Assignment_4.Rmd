@@ -1,40 +1,63 @@
 ---
-  title: "Assignment 3"
+title: "Tidying and Transforming Data"
 author: "Alyssa Gurkas"
 date: "`r Sys.Date()`"
 output:
   html_document: default
+  theme: cerulean 
 pdf_document: default
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
-# Tidying and Transforming Data
-Tidying data means the data follows a consistent structure that makes it easier 
-to manipulate, analyze, and visualize. A dataset is considered tidy if it 
-follows these three rules:
-1. Each variable forms a column 
-2. Each observation forms a row 
-3. Each value has its own cell
 
-```{r load-libraries}
+Tidying the data means giving it a consistent structure. Tidy data is easier to manipulate, analyze, and visualize. A dataset is considered tidy if it follows 
+these three rules:
+
+```{=html}
+<style>
+.blue-text { color: #0077B6; }
+</style>
+```
+1.  [Each variable forms a column.]{.blue-text}\
+2.  [Each observation forms a row.]{.blue-text}\
+3.  [Each value has its own cell]{.blue-text}
+
+```{r load-libraries, include=FALSE, echo=FALSE,message=FALSE,warning=FALSE}
 library(tidyverse)
 library(RSocrata)
 library(janitor)
 library(gsheet)
 ```
 
-```{r load-data}
+```{r load-data, include=FALSE, echo=FALSE,message=FALSE,warning=FALSE}
 url <- 'docs.google.com/spreadsheets/d/1voYjtCYl1bHFKC-LfLyrWmkP5jeSVXTLK4Z2W12wth8'
 data <- gsheet2text(url, format='csv')
 airline_data <- read_csv(data)
 ```
+
 <br>
 
-To demonstrate tidy data, we can work with an example dataset showing airline
-arrival delays for America West Airlines and Alaska Airlines:
-![Airline Data](/Week_4/airline_data.png)
+To demonstrate tidying data, we can work with an example dataset showing airline arrival delays for America West Airlines and Alaska Airlines: ![Airline Data](/cloud/project/Week_4/airline_data.png)
 
-```{r tidying-data}
-#check that this should be titled tidying (versus cleaning or another term)
+<br>
 
+When the data is loaded into R however, it looks different from how it does 
+above:
+
+```{r ex-messy-data, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::kable(airline_data, format ="markdown")
+```
+
+This is because R does not know how to interpret empty headers and missing data, 
+so it creates the column titles '...1' and '...2' and assigns the missing values 
+as NA.
+
+<br> 
+
+To tidy the data, we can remove the empty row, rename the columns that are titled incorrectly, and replace the incorrect "NA" values with the associated airlines.
+
+```{r tidying-data, include=TRUE}
 airline_data_cleaned <- airline_data |>
                             remove_empty("rows") |>
                             rename("Airline" = "...1",
@@ -43,7 +66,11 @@ airline_data_cleaned <- airline_data |>
 
 airline_data_cleaned[2,1] <- "ALASKA"
 airline_data_cleaned[4,1] <- "AM WEST"
+```
 
+Then, to make sure that the data can be analyzed,the data should be pivoted longer, so that each row is an observation, depicting flight arrivals and delay times by minutes:
+
+```{r transforming-data, include=TRUE}
 airline_data_cleaned <- airline_data_cleaned |> 
                             pivot_longer( cols = c("Los Angeles",
                                                    "Phoenix", 
@@ -54,24 +81,40 @@ airline_data_cleaned <- airline_data_cleaned |>
                                                    values_to="Minutes")
 ```
 
-```{r plot-by-city}
+<br>
+
+
+To visualize the delays, a new dataframe called 'delays' is created by 
+filtering the `Type` column:
+```{r delays-df, include=TRUE}
 delays <- airline_data_cleaned |> 
   filter(Type =="delayed")
+```
 
-alaska_d <- delays |> 
-  filter(Airline =="ALASKA")
+<br>
 
-amwest_d <- delays |> 
-  filter(Airline=="AM WEST")
-
+Then, by plotting the data, it can become apparent if there are any outliers:
+```{r plot-delays, include=TRUE, echo=FALSE}
 ggplot(data = delays, aes(x=Minutes, fill="pastel")) +
 geom_histogram(bins=30) +
 facet_grid(rows=vars(`Airline`))+
 theme(legend.position="none")
 ```
 
-```{r summary-stats}
+<br>
+
+To see summary statistics to confirm which airline has longer delays, 
+the data is grouped by airline, and the median, mean, and interquartile range
+is calculated.
+
+```{r summary-stats, message=FALSE,warning=FALSE,include=TRUE}
 delays |> 
 group_by(Airline) |> 
-summarise(median_ad = median(Minutes), mean_ad=mean(Minutes),iqr_ad = IQR(Minutes), var_ad = var(Minutes))
+summarise(median_ad = median(Minutes), mean_ad=mean(Minutes),iqr_ad = IQR(Minutes))
 ```
+
+<br>
+In this dataset, American West Airlines has more severe delays than Alaska 
+Airlines. Both datasets have one outlier each - with American West Airline's
+longest delay of 415 minutes for its flight to Phoenix. Alaska airlines median 
+delay is 62 minutes, whereas American West Airlines median delay is 117 minutes.
