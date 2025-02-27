@@ -29,13 +29,7 @@ df_3 <- eia_data(dir= "ieo/2023",
                                scenario = "HighMacro"))
 
 ### other scrap code below
-# The data loaded above is managed by The New York Power Authority, and is 
-# collected from project contracts, including project name and codes, location, 
-# cost estimates, and energy efficiency savings estimates. This collection effort 
-# is related to the Energy Efficiency Market Acceleration Program (EE MAP), which 
-# was an initiative lead by former Governor Cuomo to advance market development 
-# and commercialization of new energy efficient technologies.
-# 
+
 # To add more geographic information of these projects, FIPS county codes can be 
 # used. FIPS county codes are five-digit numbers that identify counties in the 
 # United States. The first two digits of a FIPS county code represent the state, 
