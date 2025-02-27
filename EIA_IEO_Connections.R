@@ -27,3 +27,25 @@ df_3 <- eia_data(dir= "ieo/2023",
                  facets = list(regionId = "6-1",
                                history = "PROJECTION",
                                scenario = "HighMacro"))
+
+### other scrap code below
+# The data loaded above is managed by The New York Power Authority, and is 
+# collected from project contracts, including project name and codes, location, 
+# cost estimates, and energy efficiency savings estimates. This collection effort 
+# is related to the Energy Efficiency Market Acceleration Program (EE MAP), which 
+# was an initiative lead by former Governor Cuomo to advance market development 
+# and commercialization of new energy efficient technologies.
+# 
+# To add more geographic information of these projects, FIPS county codes can be 
+# used. FIPS county codes are five-digit numbers that identify counties in the 
+# United States. The first two digits of a FIPS county code represent the state, 
+# and the last three digits represent the county. 
+
+fips_data <- read.socrata("https://data.ny.gov/resource/juva-r6g2.json")
+
+ny_fips <- fips_data |> 
+  mutate(County=toupper(`county`)) |> 
+  select(-county)
+
+knitr::kable(head(ny_fips, format ="markdown")) 
+
