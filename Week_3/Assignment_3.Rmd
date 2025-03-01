@@ -14,71 +14,129 @@ data integrity. Using this method, the data is organized in many tables, linked
 together by relationships (such as a unique id or key). There are a few levels
 to normalized datasets: 1NF, 2NF, 3NF. 
 
-```{r load-librarys, include=FALSE}
+```{r load-librarys, include=FALSE,message=FALSE, warning=FALSE, error=FALSE}
 library(tidyverse)
 library(RSocrata)
 library(janitor)
+library(knitr)
+library(kableExtra)
 ```
 
 <br> 
 If a database were to be considered 1NF, or in the first normal form, it would 
 be meet the following criteria:
 
-1. Each cell does not hold more than one value
-
-2. Every row has a unique identifier
-
-3. There are no duplicated entries
-
-4. Each column only has one value for each row in the table
+```{=html}
+<style>
+.blue-text { color: #0077B6; }
+</style>
+```
+1.  [Each cell does not hold more than one value]{.blue-text}\
+2.  [Every row has a unique identifier]{.blue-text}\
+3.  [Each column only has one value for each row in the table]{.blue-text}
 
 <br>
 
 An example dataset that is in the 1NF form is New York State's Energy Efficiency
 Completed Projects Dataset:
-```{r data-connection, include=TRUE}
+```{r data-connection, include=TRUE,message=FALSE, warning=FALSE, error=FALSE}
 # completed energy efficiency projects in NY 
 # documentation here: https://data.ny.gov/Energy-Environment/Energy-Efficiency-Completed-Projects-Beginning-198/erjw-j2zx/about_data
+
+# loading data from open ny data
 ny_ee_proj <- read.socrata("https://data.ny.gov/resource/erjw-j2zx.json") 
 
+# calculating the number of unique project codes
 n_distinct(ny_ee_proj$project_code)
+
+# calculating the number of rows
 nrow(ny_ee_proj)
 
+# creating a data frame with an agency ID, and rearranging the columns
 df_1nf <- ny_ee_proj %>% 
   group_by(agency) %>% 
   mutate(agency_id =cur_group_id()) %>% 
-  ungroup()
+  ungroup() |> 
+  relocate(`project_code`,`project_name`,`year_completed`,`date_completed`,`agency`,`agency_id`)
 
-df_1nf_clean <- clean_names(df_1nf, "title")
+df_1nf_clean <- clean_names(df_1nf, "title") |> 
+  rename("County" = "Ny State County")
 
-head(df_1nf_clean)
-
-#below should include table of the 1NF dataset
-#knitr::kable(CurrentMonthbyOrgTable, format ="markdown")
+# rendering the 1NF data frame, showing the first 6 rows and columns
+knitr::kable(head(df_1nf_clean, format ="markdown", n = c(6, 6))) 
 ```
 
+The data seen above is managed by The New York Power Authority, and is
+collected from project contracts, including project name and codes, location,
+cost estimates, and energy efficiency savings estimates. This collection effort
+is related to the Energy Efficiency Market Acceleration Program (EE MAP), which
+was an initiative lead by former Governor Cuomo to advance market development
+and commercialization of new energy efficient technologies.
 
 <br>
-An example of a datasets that are within the 2NF form is the same dataset, 
-but transformed:
-```{r 2NF, include=TRUE}
+To transform the data into the 2NF form, the code below creates two different 
+tables, the Agency Table, and the Energy Project Table:
+```{r 2NF, include=TRUE, message=FALSE, warning=FALSE, error=FALSE}
 # agency table
 # removing values where Agency title is empty (NA)
 df_2nf_ex1 <- df_1nf %>% 
   select(agency_id,agency,address,city,zip,address_ext) %>% 
   distinct() %>% 
   drop_na(agency) %>% 
-  arrange(agency_id) 
+  arrange(agency_id) |> 
+  clean_names("title")
 
 # Energy Project Table
 df_2nf_ex2 <- df_1nf %>% 
   select(-agency,-address,-city,-zip,-address_ext) %>% 
-  relocate(agency_id)
+  relocate(agency_id) |> 
+  clean_names("title")
 
-#below should include table of the 1NF dataset
-#knitr::kable(CurrentMonthbyOrgTable, format ="markdown")
+# rendering the Agency Table, showing the first 6 rows and columns
+knitr::kable(head(df_2nf_ex1, format ="markdown", n = c(6, 6)))
+
+# rendering the Energy Project Table, showing the first 6 rows and columns
+knitr::kable(head(df_2nf_ex2, format ="markdown", n = c(6, 6)))
+```
+<br>
+
+By adding an Agency ID, it ensures that if there were two organizations with 
+the same name, or similar names, there would still be a distinct key to identify
+them. Additionally, with a unique ID it can become easier to look up information
+about an agency:
+
+```{r agency-look-up, message=FALSE, warning=FALSE, error=FALSE}
+df_2nf_ex2 |> 
+  filter(`Agency Id` == 1) |> 
+  head(n = c(6, 6))
 ```
 
+Below is an example of the data as unnormalized: 
+```{r unnormalized-ex1, include=TRUE, message=FALSE, warning=FALSE, error=FALSE}
+
+# creating a function to combine the year_completed and date_completed columns 
+# as a list in a new column titled 'Completion'
+df_1nf$Completion <- mapply(function(year, date) list(Year = as.integer(year), 
+                                                      Date = as.Date(date, 
+                                                                     format = "%Y-%m-%d")),
+                            df_1nf$year_completed, 
+                            as.Date(df_1nf$date_completed, format = "%Y-%m-%d"),
+                            SIMPLIFY = FALSE)
+
+df_un <- df_1nf[, c("project_code", "Completion")]
+
+# render the unnormalized dataframe
+kable(head(df_un, format = "html", escape = FALSE)) |> 
+ kable_styling("striped", full_width = FALSE)
+
+```
+
+In this example, the completion dates and year is combined into one column. As a
+note, when the table is rendered, it calculates the number of days since 
+January 1, 1970 (representing when R was created). This type of data structure
+could complicate data entry or analysis, as the dates may need to be extracted
+from the `Completion` column to be analyzed, and if a date needed to be edited,
+it would not be simple to do so. 
 
 <br> 
 
@@ -86,18 +144,24 @@ To achieve an 3NF form, the database should be in the second form (2NF), and
 have no transitive partial dependency. This means there are no
 duplicates or transitory keys. For example, the code below transforms the data 
 to the third form:
-```{r 3NF, include=TRUE}
-# here will have code that transforms the data to the 3rd form
 
+```{r 3NF, include=TRUE,message=FALSE, warning=FALSE, error=FALSE}
+# creating project code table
 df_3nf_ex1_projectcode <- df_2nf_ex2 |>
-  select(project_code, project_name) |>
-  distinct()
+  select(`Project Code`, `Project Name`) |>
+  distinct() |> 
+  clean_names("title")
 
+# creating the project table
 df_3nf_ex2_projects <- df_2nf_ex2 |>
-  select(-project_name)
+  select(-`Project Name`) |> 
+  clean_names("title")
 
-#below should include table of the 1NF dataset
-#knitr::kable(CurrentMonthbyOrgTable, format ="markdown")
+# render the project code table
+knitr::kable(head(df_3nf_ex1_projectcode, format ="markdown"))
+
+# render the project table with descriptive columns
+knitr::kable(head(df_3nf_ex2_projects, format ="markdown", n = c(6, 6)))
 ```
 
 # Character Manipulation 
@@ -111,13 +175,13 @@ majors_data <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/
 ```
 
 Then, using the stringr package, we can filter the data to only include majors that incorporate the terms "data" or "statistics": 
-```{r str-detect-ex, include=TRUE}
+```{r str-detect-ex, include=TRUE, message=FALSE, warning=FALSE, error=FALSE}
 majors_data_filtered <- majors_data %>% 
   filter(str_detect(Major,"DATA|STATISTICS"))
 ```
 
 This creates a dataframe with three majors:
-```{r data-stat-majors, include=TRUE, echo=TRUE}
+```{r data-stat-majors, include=TRUE, echo=TRUE, message=FALSE, warning=FALSE, error=FALSE}
 majors_data_filtered$Major
 ```
 
