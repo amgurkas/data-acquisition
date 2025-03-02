@@ -12,6 +12,8 @@ output:
     toc_depth: 4
 ---
 
+[Github Repository](https://github.com/amgurkas/data-acquisition) 
+
 ### Introduction to Tidy Data
 Tidying the data means giving it a consistent structure. Tidy data is easier to manipulate, analyze, and visualize. A dataset is considered tidy if it follows 
 these three rules:
