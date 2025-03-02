@@ -3,14 +3,16 @@ title: "Tidying and Transforming Data"
 author: "Alyssa Gurkas"
 date: "`r Sys.Date()`"
 output:
-  html_document: default
-  theme: cerulean 
-pdf_document: default
-editor_options: 
-  markdown: 
-    wrap: 72
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    number_sections: false
+    toc_collapsed: true
+    toc_depth: 4
 ---
 
+### Introduction to Tidy Data
 Tidying the data means giving it a consistent structure. Tidy data is easier to manipulate, analyze, and visualize. A dataset is considered tidy if it follows 
 these three rules:
 
@@ -28,6 +30,9 @@ library(tidyverse)
 library(RSocrata)
 library(janitor)
 library(gsheet)
+library(png)
+library(grid)
+library(cowplot)
 ```
 
 ```{r load-data, include=FALSE, echo=FALSE,message=FALSE,warning=FALSE}
@@ -61,14 +66,13 @@ To tidy the data, we can remove the empty row, rename the columns that are title
 airline_data_cleaned <- airline_data |>
                             remove_empty("rows") |>
                             rename("Airline" = "...1",
-                                   "Type" = "...2")
-
-
-airline_data_cleaned[2,1] <- "ALASKA"
-airline_data_cleaned[4,1] <- "AM WEST"
+                                   "Type" = "...2") |> 
+  fill(`Airline`)
 ```
 
-Then, to make sure that the data can be analyzed,the data should be pivoted longer, so that each row is an observation, depicting flight arrivals and delay times by minutes:
+### Tidy Data by Pivoting Longer 
+Then, to make sure that the data can be analyzed, the data should be pivoted longer, so that each row is an observation, depicting flight arrivals and delay
+by count:
 
 ```{r transforming-data, include=TRUE}
 airline_data_cleaned <- airline_data_cleaned |> 
@@ -78,43 +82,292 @@ airline_data_cleaned <- airline_data_cleaned |>
                                                    "San Francisco",
                                                    "Seattle"),
                                                    names_to= "Cities", 
-                                                   values_to="Minutes")
+                                                   values_to="Count") 
+```
+
+
+### Pivot Wider and Calculate Totals
+To visualize and analyze the data, it may be helpful to have a column that includes the total number of flights, and pivot the data wider:
+```{r add-type-cols, include=TRUE, message=FALSE,error=FALSE,warning=FALSE}
+airline_data_cleaned <- airline_data_cleaned |>  
+pivot_wider(names_from = Type, 
+            values_from = `Count`) |> 
+  mutate(Total = `on time` + `delayed`) |> 
+  rename("On Time" = "on time",
+         "Delayed" = "delayed") |> 
+  mutate(Airline = case_when(Airline == "AM WEST"~"America West",
+                             Airline == "ALASKA"~"Alaska"))
+```
+
+
+### Summaries of Airline Performance
+```{r summary-table, include=TRUE, echo=FALSE}
+summary <- airline_data_cleaned |> 
+  group_by(Airline) |> 
+  summarise(`On Time` = sum(`On Time`), `Delayed` =sum(`Delayed`), `Total`=sum(`Total`))
+
+knitr::kable(summary, format ="markdown")
+
+summary_plot <- summary |> pivot_longer(
+  cols = c("Delayed","On Time"),
+  names_to= "Status", 
+  values_to="Count"
+)
+```
+
+The table above shows the total numbers of flights, delayed flights, and on-time
+flights by airline. From this table, it is apparent that America West had more 
+total flights.
+
+<br>
+
+```{r summary-plot, include=TRUE, echo=FALSE}
+ggplot(summary_plot, aes(fill=Status, y=Count, x=Airline)) + 
+    geom_bar(position="stack", stat="identity",width = 0.5)+
+    scale_fill_manual(values=c("Delayed"="#EF5A6F","On Time"="#536493"))+
+    labs(
+    title = "Flight Statuses by Airline",
+    x = "Airline",
+    y = "Count"
+  )+
+    theme_minimal()+
+  theme(
+    plot.title = element_text(hjust = 0.5))
+```
+<br>
+
+This plot shows the flight statuses by airline. From this plot, it seems that America West has a slightly higher rate of delayed flights than Alaska Airlines.
+
+<br>
+
+#### Summary Table of Delayed Flights
+```{r summary-delay-table, include=TRUE, echo=FALSE}
+summary_delays <- airline_data_cleaned |> 
+  group_by(Airline) |> 
+  summarise(`Median Number of Delayed Flights` = median(Delayed), `Mean Number of Delayed Flights`=mean(Delayed),`IQR of Delayed Flights` = IQR(Delayed), `Total Delayed Flights` = sum(`Delayed`),`Total Number of Flights`=sum(`Total`))
+
+knitr::kable(summary_delays, format ="markdown")
+```
+
+The table above shows the median, mean, and interquartile range for delayed flights by airline. It also provides the total number of delayed flights, and total flights by airline. America West has higher median and mean values for delayed flights. The interquartile range (IQR) describes the spread of the data, and a high IQR can indicate that the data is more spread out, than a smaller IQR.
+
+<br>
+
+#### Summary Table of On-Time Flights
+``` {r summary-ontime-table, include=TRUE}
+summary_ontime <- airline_data_cleaned |> 
+  group_by(Airline) |> 
+  summarise(`Median Number of On-Time Flights` = median(`On Time`), `Mean Number of On-Time Flights`=mean(`On Time`),`IQR of On-Time Flights` = IQR(`On Time`), `Total On-Time Flights Flights` = sum(`On Time`),`Total Number of Flights`=sum(`Total`))
+
+knitr::kable(summary_ontime, format ="markdown")
+```
+
+The table above shows the median, mean, and interquartile range for on-time flights by airline. It also provides the total number of delayed flights, and 
+total flights by airline. Since America West's median value for on-time flights 
+is lower than the mean, this indicates the distribution is right-skewed for on-time flights.
+
+<br>
+
+### Delayed Flights by City (Total)
+```{r summary-delayed-flights-by-city-total, include=TRUE, echo=FALSE}
+airline_data_cleaned |> 
+  group_by(Cities) |>
+  summarise(Delayed=sum(Delayed)) |> 
+  arrange(Delayed) |> 
+ggplot(aes
+       (x = Delayed,
+        y = fct_reorder(Cities, Delayed, .desc = TRUE),
+          fill = Delayed)) +
+  geom_bar(stat = "identity") +
+  scale_fill_gradient(low="#F6BDC0",high="#DC1C13") +
+  labs(
+    title = "Delayed Flights by City",
+    x = "Count of Delayed Flights",
+    y = "",
+    fill = "Delayed"
+  ) +
+  theme_minimal()+
+  theme(
+    legend.position="none",
+    plot.title = element_text(hjust = 0.5),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash")
+  )
+  
+```
+
+### Delayed Flights by City and Airline
+```{r summary-delayed-flights-by-city-airline, include=TRUE, echo=FALSE}
+
+# Load images correctly
+amwest_logo <- rasterGrob(readPNG("amwest.png"), interpolate = TRUE)
+alaska_logo <- rasterGrob(readPNG("alaska.png"), interpolate = TRUE)
+
+# Main Delay Plot
+plot_d_c_a <- airline_data_cleaned |> 
+  ggplot(aes(
+    x = Delayed,
+    y = fct_reorder(Cities, Delayed, .desc = TRUE),
+    fill = Airline
+  )) +
+  geom_bar(position = "stack", stat = "identity", width = 0.5) +
+  labs(
+    title = "Delayed Flights by City and Airline",
+    x = "Count of Delayed Flights",
+    y = "",
+    fill = "Airline"
+  ) +
+  scale_fill_manual(values=c("America West"="#A52A2A","Alaska"="#007cba"))+
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash"),
+    legend.position = "none"
+  )
+
+# Custom Legend (Logos)
+legend_plot <- ggplot() +
+  xlim(0, 3) + ylim(0, 3) +  # Ensure space for annotations
+  theme_void() +
+  annotation_custom(amwest_logo, xmin = 0.5, xmax = 1.5, ymin = 1.55, ymax = 1.85) +
+  annotation_custom(alaska_logo, xmin = 0.5, xmax = 1.5, ymin = 1, ymax = 1.3) +
+  annotate("text", x = 1.65, y = 1.70, label = "American\nWest", size = 3, hjust = 0) +
+  annotate("text", x = 1.65, y = 1.15, label = "Alaska", size = 3, hjust = 0)
+
+# Combine Main Plot and Legend
+final_d_c_aplot <- plot_grid(plot_d_c_a, legend_plot, ncol = 2, rel_widths = c(3, 1))
+
+print(final_d_c_aplot)
+```
+
+The plot above is similar to the Delayed Flights by City Plot, but adds more information through the stacked-bar chart, now incorporating information on airlines. In graph, it shows that most of American West's delayed flights are in Phoenix, and most of Alaska's delayed flights are in Seattle. 
+
+
+### On-Time Flights by City and Airline
+```{r summary-delayed-flights-by-city, include=TRUE, echo=FALSE}
+
+# Main Arrival Plot
+plot_o_c_a <- airline_data_cleaned |> 
+  ggplot(aes(
+    x = `On Time`,
+    y = fct_reorder(Cities, `On Time`, .desc = TRUE),
+    fill = Airline
+  )) +
+  geom_bar(position = "stack", stat = "identity", width = 0.5) +
+  labs(
+    title = "On-Time Flights by City and Airline",
+    x = "Count of On-Time Flights",
+    y = "",
+    fill = "Airline"
+  ) +
+  scale_fill_manual(values=c("America West"="#A52A2A","Alaska"="#007cba"))+
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash"),
+    legend.position = "none"
+  )
+
+# Custom Legend (Logos)
+legend_plot <- ggplot() +
+  xlim(0, 3) + ylim(0, 3) +  # Ensure space for annotations
+  theme_void() +
+  annotation_custom(amwest_logo, xmin = 0.5, xmax = 1.5, ymin = 1.55, ymax = 1.85) +
+  annotation_custom(alaska_logo, xmin = 0.5, xmax = 1.5, ymin = 1, ymax = 1.3) +
+  annotate("text", x = 1.65, y = 1.70, label = "American\nWest", size = 3, hjust = 0) +
+  annotate("text", x = 1.65, y = 1.15, label = "Alaska", size = 3, hjust = 0)
+
+# Combine Main Plot and Legend
+final_o_c_a_plot <- plot_grid(plot_o_c_a, legend_plot, ncol = 2, rel_widths = c(3, 1))
+
+print(final_o_c_a_plot)
+
+```
+
+This plot shows the on-time flights by city and airline. Similar to the plot above, American West has the most on-time flights in Phoenix, and Alaska has the most on-time flights in Seattle.
+
+### Flight Delay Rate by City and Airline
+```{r flight-delay-rate-plot, include=TRUE, warning=FALSE, echo=FALSE, message=FALSE}
+
+plot_delay_rate <- airline_data_cleaned |>
+  mutate(
+    delay_rate = Delayed / Total,
+    delay_label = paste0(round(100 * (Delayed / Total)), "%"),
+    ) |> 
+  mutate(
+    city_total = sum(Total),
+    city_total_label = ifelse(Airline == "Alaska", NA, paste0("(",format(sum(Total), big.mark = ","), ")")),
+    .by = Cities
+  ) |>
+  ggplot(aes(y = reorder(Cities, city_total))) +
+  geom_bar(
+    aes(
+      x = delay_rate,
+      fill = Airline,
+    ),
+    stat = "identity",
+    position = position_dodge(width = 0.8)
+  ) +
+  geom_text(
+    aes(
+      x = delay_rate + 0.03,
+      group = Airline,
+      label = delay_label
+    ),
+      position = position_dodge(width = 0.8)
+  ) +
+  geom_text(
+    aes(
+      x = .42,
+      y = Cities,
+      label = city_total_label
+    )
+  ) +
+  scale_x_continuous(labels = scales::label_percent()) +
+  xlim(c(0, 0.45)) +
+  scale_fill_manual(
+    values = c("Alaska" = "#124168", "America West" = "#89211a")
+  ) +
+  labs(
+    title = "Delay Rate by Airline in West Coast Hub Airports",
+    x = "Rate of Delay",
+    y = "",
+    caption = "(Total flights)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash"),
+    legend.position = "none",
+    plot.caption = element_text(
+      hjust = -0.3,        # Aligns caption to the left
+      vjust = -1.5,       # Moves caption lower
+      size = 10,
+      face = "italic",
+      margin = margin(t = 10)  # Adds space above the caption
+    )
+  )
+
+
+# Custom Legend (Logos)
+legend_plot <- ggplot() +
+  xlim(0, 3) + ylim(0, 3) +  # Ensure space for annotations
+  theme_void() +
+  annotation_custom(amwest_logo, xmin = 0.5, xmax = 1.5, ymin = 2, ymax = 2.3) +
+  annotation_custom(alaska_logo, xmin = 0.5, xmax = 1.5, ymin = 1.5, ymax = 1.8) +
+  annotate("text", x = 1.65, y = 2.15, label = "American\nWest", size = 3, hjust = 0) +
+  annotate("text", x = 1.65, y = 1.65, label = "Alaska", size = 3, hjust = 0)
+
+# Combine Main Plot and Legend
+final_plot_delay_rate <- plot_grid(plot_delay_rate, legend_plot, ncol = 2, rel_widths = c(3, 1))
+
+print(final_plot_delay_rate)
+
 ```
 
 <br>
 
-
-To visualize the delays, a new dataframe called 'delays' is created by 
-filtering the `Type` column:
-```{r delays-df, include=TRUE}
-delays <- airline_data_cleaned |> 
-  filter(Type =="delayed")
-```
-
-<br>
-
-Then, by plotting the data, it can become apparent if there are any outliers:
-```{r plot-delays, include=TRUE, echo=FALSE}
-ggplot(data = delays, aes(x=Minutes, fill="pastel")) +
-geom_histogram(bins=30) +
-facet_grid(rows=vars(`Airline`))+
-theme(legend.position="none")
-```
-
-<br>
-
-To see summary statistics to confirm which airline has longer delays, 
-the data is grouped by airline, and the median, mean, and interquartile range
-is calculated.
-
-```{r summary-stats, message=FALSE,warning=FALSE,include=TRUE}
-delays |> 
-group_by(Airline) |> 
-summarise(median_ad = median(Minutes), mean_ad=mean(Minutes),iqr_ad = IQR(Minutes))
-```
-
-<br>
-In this dataset, American West Airlines has more severe delays than Alaska 
-Airlines. Both datasets have one outlier each - with American West Airline's
-longest delay of 415 minutes for its flight to Phoenix. Alaska airlines median 
-delay is 62 minutes, whereas American West Airlines median delay is 117 minutes.
+In the plots above, it was not immediately clear which city has the highest rate of delayed flights by airline. For American West, the city with the highest rate of delayed flights is San Francisco, and for Alaska, the highest rate of delayed flights is San Francisco.
