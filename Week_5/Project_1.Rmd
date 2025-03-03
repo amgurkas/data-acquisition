@@ -2,9 +2,161 @@
 title: "Assignment_5"
 author: "Alyssa Gurkas"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    number_sections: false
+    toc_collapsed: true
+    toc_depth: 4
 ---
 
+```{r set-chunk-options, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,      
+  results = "hide", 
+  warning = FALSE,  
+  error = FALSE,   
+  message = FALSE)
+```
+
+### Load Packages
 ```{r load-packages}
-library(tidyr)
+library(tidyverse)
+library(readr)
+library(textdata)
+```
+
+### Load Text File
+```{r load-txt-file}
+txt_lines <- readLines("tournamentinfo.txt")
+txt_data <- txt_lines[!grepl("^-+$", txt_lines)]
+```
+
+### Introduction
+In this report, a text file showing chess data is transformed so it may be used
+for future analysis. The data in the text file appears like this:
+![Chess Data](/cloud/project/Week_5/chess_txt_data.png)
+<br>
+
+### Split Data by Separators 
+First, the data is split using the separators within the rows, and saved as a 
+dataframe.
+```{r clean-data}
+split_data <- strsplit(txt_data, "\\|")
+df <- do.call(rbind, split_data) |> as.data.frame()
+```
+
+### Assign Row IDs
+Then, a column titled ID is calculated to create a unique ID for each data entry 
+group, as organized in the text file.
+```{r assign-id}
+df_v2 <- df |> mutate(ID =ceiling(row_number()/2))
+```
+
+### Create New Columns and Extract Values using the Stringr Package
+To begin the data transformation, regex statements are used to extract values.
+```{r make-regex-cols}
+df_v3 <- df_v2 |> 
+  mutate(uscf_id = str_extract(V2,"\\d{8}"),
+         rtg_pre = str_extract(V2, "R:\\s\\d+[P]\\d+|R:\\s\\d+"),
+         rtg_post = str_extract(V2, "(->)\\d+[a-zA-Z]\\d+|(->)\\d+"),
+         norm = str_extract(V3, "[N]:\\d+"),
+         pair_id = str_extract(V1,"\\d+"),
+         total_pts = str_extract(V3,"\\d.\\d"),
+         rtg_pre = str_remove(rtg_pre,"R:"),
+         rtg_post = str_remove(rtg_post,"(->)"),
+         norm = str_remove(norm, "[N]:")
+         ) |> 
+  fill(pair_id,
+       total_pts)
+```
+
+### Create the Player Table
+Then we create the first table, including the player information.
+```{r tbl1-plyr-info}
+tbl1 <- df_v3 |> 
+  select(V2,ID,uscf_id,pair_id,rtg_pre,rtg_post,total_pts,norm) |> 
+  tail(-2) |> 
+  mutate(player_name = if_else(is.na(uscf_id),V2,NA)) |> 
+  fill(player_name,
+       pair_id
+) |> 
+  drop_na() |> 
+  relocate(ID,player_name,uscf_id,rtg_pre,rtg_post) |> 
+  select(-V2)
+```
+
+```{r tbl1-knit, echo=FALSE, results="show",warning=FALSE, message=FALSE}
+knitr::kable(head(tbl1, format ="markdown"))
+```
+
+### Tidy the Data by Pivoting Longer and Wider
+To arrange the data so that the round information is clear, the data is pivoted
+longer, using regex expressions to extract values.
+
+Then, the data is pivoted wider, to create a color and type column.
+```{r pivots}
+df_v4 <- df_v3 |> 
+  fill(uscf_id, .direction="up") |> 
+  rename("R_1" = "V4",
+         "R_2" = "V5",
+         "R_3" = "V6",
+         "R_4" = "V7",
+         "R_5" = "V8",
+         "R_6" = "V9",
+         "R_7" = "V10"
+         ) |> 
+  select(-ID, -V1,-V2,-V3,-rtg_pre,-rtg_post,-V11,-norm,-pair_id,-total_pts) |> 
+  relocate(uscf_id)|> 
+  tail(-2) |> 
+  group_by(uscf_id) |>
+  mutate(
+    across(
+      matches("^R_")
+      ,~max(str_extract(.x,"[A-Z](?=\\s+\\d+)"), na.rm = TRUE),
+      .names = "type_{.col}"
+    ),
+    across(
+      matches("^R_")
+      ,~max(str_extract(.x,"\\d+"), na.rm = TRUE),
+      .names = "playerid_{.col}"
+    ),
+    across(
+      matches("^R_")
+      ,~max(str_extract(str_trim(.x),"^(B|W)$"), na.rm = TRUE),
+      .names = "color_{.col}"
+    )
+  ) |>
+  select(-matches("^R_\\d$")) |>
+  distinct() |> 
+  pivot_longer(
+    cols = matches("R"),
+    names_to = c("metric","round"),
+    names_pattern = "(.*)_R_(.*)"
+  )
+  
+df_v5 <- df_v4 |> 
+  pivot_wider(
+    id_cols = c(uscf_id,round),
+    names_from = metric,
+    values_from = value
+  ) |> 
+  rename("opp_pair_id"="playerid")
+```
+
+### Create the Rounds Table
+Finally, a table is developed to show the data for each round.
+```{r tbl2}
+tbl2 <- df_v5 |>
+  mutate(pt = case_when(type == "D"~.5,
+                        type== "W"~1,
+                        type== "L"~0,
+                        TRUE ~NA)
+          ) |> 
+  relocate(uscf_id,round,type,pt,opp_pair_id)
+```
+
+```{r tbl2-knit, echo=FALSE, results="show",warning=FALSE, message=FALSE}
+knitr::kable(head(tbl2, format ="markdown"))
 ```
