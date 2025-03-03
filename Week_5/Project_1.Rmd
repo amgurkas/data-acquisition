@@ -1,0 +1,10 @@
+---
+title: "Assignment_5"
+author: "Alyssa Gurkas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r load-packages}
+library(tidyr)
+```
