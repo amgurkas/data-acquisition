@@ -162,3 +162,15 @@ tbl2 <- df_v5 |>
 ```{r tbl2-knit, echo=FALSE, results="show",warning=FALSE, message=FALSE}
 knitr::kable(head(tbl2, format ="markdown"))
 ```
+
+```{r creating-final=table}
+# select Player's Name, Player's State, Total Number of Pts, Player's Pre-Rating,
+# Avg Pre-Chess Rating if Oponent for 1st player
+
+## EX: for the first player the results should be - 
+### Gary Hua, ON, 6.0, 1794, 1605
+#### 1605 was calculated by using the pre-tournament opponents' ratings of:
+##### 1436, 1563, 1600, 1610, 1649, 1663, 1716, and dividing by the total # of 
+###### games played. 
+
+```
