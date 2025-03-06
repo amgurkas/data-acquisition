@@ -9,19 +9,22 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r existing-code}
+```{r load libraries}
 # load libraries
 library(RSocrata)
 library(tidyverse)
 library(readr)
 library(readxl)
 library(janitor)
+```
 
-
+```{r call-dart-api}
 # API call to NYS DEC DART
 # would be nice to call the API for NPDES permits (as listed in p_type)
 dart <- read.socrata("https://data.ny.gov/resource/mbk7-f2r2.json")
+```
 
+```{r defining-patterns}
 #creating a not in function
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
@@ -41,15 +44,14 @@ s_type <- c("SAPA Extended",
 d_type <- c("02", 
             "04")
 
-icis_v2 <- icis %>% 
-  filter(`Permit Status` %in% s_type)
-
 # defining the regex patterns for the IDs we want to track
 npdes_pattern <- "NY\\d{7}"
 gp_pattern <- "GP\\d{7}"
 individual_pattern <- "NY[A-Z]\\d{2}[A-Z]\\d{3}"
 all_patterns <- paste(npdes_pattern,gp_pattern,individual_pattern, sep="|")
+```
 
+```{r creating-universe-v1}
 # creating the permit universe pulling from NYSDEC's DART System 
 # and detecting the string patterns within DART to assign permit type 
 # (npdes, individual, general, or multi meaning the permit action had 
@@ -65,7 +67,9 @@ universe <- dart %>%
     sum_ids = rowSums(across(c(`npdes`, `individual`,`gp`))),
     npdes_id = str_extract_all(`other_known_ids`, all_patterns)
     ) 
+```
 
+```{r creating-universe-v2}
 universe_v2 <- universe %>% 
   mutate(
           f_p_type = case_when(universe$sum_ids  > 1 ~ "multi",
@@ -73,24 +77,23 @@ universe_v2 <- universe %>%
                                universe$sum_ids & universe$individual == 1 ~ "individual",
                                universe$sum_ids & universe$gp == 1 ~ "gp")) %>% 
   unnest_longer(npdes_id, keep_empty = FALSE)
-
-universe_v3 <- universe_v2 %>% 
-  mutate(`In_ICIS` = case_when(`npdes_id` %in% icis_v2$`npdes_id` ~ "Y",
-                               `npdes_id` %!in% icis_v2$`npdes_id` ~"N")) %>% 
-  filter(`f_p_type` != "individual") %>% 
-  group_by(application_id) %>% 
-  slice(which.max(as.Date(date_received, '%m/%d/%Y'))) 
-
-# add in check for duplicates for application ID and NPDES ID 
-
-# Considerations:
-# There are columns where there are multiple values in a single cell.
-
-# There are not unique observations in every row. This makes it difficult to 
-# determine what each application ID means.
-
-# Some features are missing unique IDs, which makes it difficult to ensure that 
-# data is entered properly and not duplicated. For example, if a facility was 
-# "Brooklyn Library" and was entered into the data as "Bk Library", and then IDs 
-# were assigned, it would count this as two facilities when it is really one.  
 ```
+
+TO DOS: 
+- Add in check for duplicates for application ID and NPDES ID
+- Add facility ID
+- Brainstorm potential tables to develop
+
+Considerations:
+There are columns where there are multiple values in a single cell.
+
+There are not unique observations in every row. This makes it difficult to
+determine what each application ID means.
+
+Some features are missing unique IDs, which makes it difficult to ensure that
+data is entered properly and not duplicated. For example, if a facility was
+"Brooklyn Library" and was entered into the data as "Bk Library", and then IDs
+were assigned, it would count this as two facilities when it is really one.
+
+
+# 
