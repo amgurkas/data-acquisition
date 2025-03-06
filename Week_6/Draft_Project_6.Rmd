@@ -1,0 +1,96 @@
+---
+title: "Project_2"
+author: "Alyssa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r existing-code}
+# load libraries
+library(RSocrata)
+library(tidyverse)
+library(readr)
+library(readxl)
+library(janitor)
+
+
+# API call to NYS DEC DART
+# would be nice to call the API for NPDES permits (as listed in p_type)
+dart <- read.socrata("https://data.ny.gov/resource/mbk7-f2r2.json")
+
+#creating a not in function
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+# p_type = permit type. note: we are not including stormwater discharge or groundwater discharge in this analysis
+p_type <- c("P/C/I SPDES - Surface Discharge",
+            "Municipal SPDES - Surface Discharge",
+            "Industrial SPDES - Surface Discharge")
+
+# defining included statuses
+s_type <- c("SAPA Extended", 
+            "Issued", 
+            "Extended Indefinitely", 
+            "Admin Continued", 
+            "Effective")
+
+#d_type = discharge classification. note: may be helpful if we want to know Class 2/4 discharge types
+d_type <- c("02", 
+            "04")
+
+icis_v2 <- icis %>% 
+  filter(`Permit Status` %in% s_type)
+
+# defining the regex patterns for the IDs we want to track
+npdes_pattern <- "NY\\d{7}"
+gp_pattern <- "GP\\d{7}"
+individual_pattern <- "NY[A-Z]\\d{2}[A-Z]\\d{3}"
+all_patterns <- paste(npdes_pattern,gp_pattern,individual_pattern, sep="|")
+
+# creating the permit universe pulling from NYSDEC's DART System 
+# and detecting the string patterns within DART to assign permit type 
+# (npdes, individual, general, or multi meaning the permit action had 
+# multiple associated IDs)
+
+universe <- dart %>% 
+  filter(`permit_type` %in% p_type,
+    `status` %in% s_type) %>% 
+  mutate(
+    npdes = str_count(`other_known_ids`, npdes_pattern),
+    individual = str_count(`other_known_ids`, individual_pattern),
+    gp =  str_count(`other_known_ids`, gp_pattern),
+    sum_ids = rowSums(across(c(`npdes`, `individual`,`gp`))),
+    npdes_id = str_extract_all(`other_known_ids`, all_patterns)
+    ) 
+
+universe_v2 <- universe %>% 
+  mutate(
+          f_p_type = case_when(universe$sum_ids  > 1 ~ "multi",
+                               universe$sum_ids & universe$npdes == 1 ~ "npdes",
+                               universe$sum_ids & universe$individual == 1 ~ "individual",
+                               universe$sum_ids & universe$gp == 1 ~ "gp")) %>% 
+  unnest_longer(npdes_id, keep_empty = FALSE)
+
+universe_v3 <- universe_v2 %>% 
+  mutate(`In_ICIS` = case_when(`npdes_id` %in% icis_v2$`npdes_id` ~ "Y",
+                               `npdes_id` %!in% icis_v2$`npdes_id` ~"N")) %>% 
+  filter(`f_p_type` != "individual") %>% 
+  group_by(application_id) %>% 
+  slice(which.max(as.Date(date_received, '%m/%d/%Y'))) 
+
+# add in check for duplicates for application ID and NPDES ID 
+
+# Considerations:
+# There are columns where there are multiple values in a single cell.
+
+# There are not unique observations in every row. This makes it difficult to 
+# determine what each application ID means.
+
+# Some features are missing unique IDs, which makes it difficult to ensure that 
+# data is entered properly and not duplicated. For example, if a facility was 
+# "Brooklyn Library" and was entered into the data as "Bk Library", and then IDs 
+# were assigned, it would count this as two facilities when it is really one.  
+```
