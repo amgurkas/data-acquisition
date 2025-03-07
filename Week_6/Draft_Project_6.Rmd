@@ -79,9 +79,30 @@ universe_v2 <- universe %>%
   unnest_longer(npdes_id, keep_empty = FALSE)
 ```
 
+```{r check-dups}
+nrow(universe_v2)
+n_distinct(universe_v2$application_id)
+n_distinct(universe_v2$npdes_id)
+
+# definitely are duplicates or NAs -> need to investigate this 
+
+
+```
+
+```{r gen-facility-id}
+# adding applicant id and facility id 
+universe_v3 <- universe_v2 %>% 
+  group_by(applicant) %>% 
+  mutate(applicant_id =cur_group_id()) |> 
+  group_by(facility) |> 
+  mutate(facility_id = cur_group_id())
+```
+
 TO DOS: 
 - Add in check for duplicates for application ID and NPDES ID
-- Add facility ID
+- Brainstorm how to handle the duplicates (should there be a col flagging dups?)
+- Add facility ID X
+- Add applicant ID X 
 - Brainstorm potential tables to develop
 
 Considerations:
