@@ -66,27 +66,34 @@ df_v3 <- df_v2 |>
          norm = str_extract(V3, "[N]:\\d+"),
          pair_id = str_extract(V1,"\\d+"),
          total_pts = str_extract(V3,"\\d.\\d"),
+         player_state = str_extract(V1,"[A-Z]{2}"),
          rtg_pre = str_remove(rtg_pre,"R:"),
          rtg_post = str_remove(rtg_post,"(->)"),
          norm = str_remove(norm, "[N]:")
          ) |> 
   fill(pair_id,
-       total_pts)
+       total_pts) |> 
+  fill(rtg_pre,
+       rtg_post,
+       norm,
+       player_state,
+       .direction="up")
 ```
 
 ### Create the Player Table
 Then we create the first table, including the player information.
 ```{r tbl1-plyr-info}
 tbl1 <- df_v3 |> 
-  select(V2,ID,uscf_id,pair_id,rtg_pre,rtg_post,total_pts,norm) |> 
+  select(V2,ID,uscf_id,pair_id,rtg_pre,rtg_post,total_pts,norm,player_state) |> 
   tail(-2) |> 
-  mutate(player_name = if_else(is.na(uscf_id),V2,NA)) |> 
-  fill(player_name,
-       pair_id
-) |> 
-  drop_na() |> 
-  relocate(ID,player_name,uscf_id,rtg_pre,rtg_post) |> 
-  select(-V2)
+  mutate(player_name = if_else(is.na(uscf_id),V2,NA))
+
+tbl1 <- tbl1 |> 
+    fill(`player_name`,.direction="down") |> 
+    fill(`uscf_id`,.direction="up") |> 
+    relocate(`ID`,`player_name`,`uscf_id`,`rtg_pre`,`rtg_post`) |>
+    select(-V2) |> 
+    distinct() #remove duplicates
 ```
 
 ```{r tbl1-knit, echo=FALSE, results="show",warning=FALSE, message=FALSE}
@@ -133,7 +140,7 @@ df_v4 <- df_v3 |>
   select(-matches("^R_\\d$")) |>
   distinct() |> 
   pivot_longer(
-    cols = matches("R"),
+    cols = matches("_R_"),
     names_to = c("metric","round"),
     names_pattern = "(.*)_R_(.*)"
   )
@@ -163,14 +170,39 @@ tbl2 <- df_v5 |>
 knitr::kable(head(tbl2, format ="markdown"))
 ```
 
-```{r creating-final=table}
+```{r creating-final-table}
 # select Player's Name, Player's State, Total Number of Pts, Player's Pre-Rating,
-# Avg Pre-Chess Rating if Oponent for 1st player
+# Avg Pre-Chess Rating of Opponent for 1st player matched w/
 
 ## EX: for the first player the results should be - 
 ### Gary Hua, ON, 6.0, 1794, 1605
 #### 1605 was calculated by using the pre-tournament opponents' ratings of:
 ##### 1436, 1563, 1600, 1610, 1649, 1663, 1716, and dividing by the total # of 
 ###### games played. 
+
+# tbl1 has: player name, state, total_pts, rtg_pre, pair_id
+
+avg_opp_rating <- left_join(
+  tbl2,
+  mutate(
+    tbl1,
+    pair_id,
+    rtg_pre_num = as.numeric(str_extract(rtg_pre, "^ \\d+")),
+    .keep = "used"
+  ),
+  by=c("opp_pair_id"="pair_id")
+) |>
+  group_by(uscf_id) |>
+  summarise(
+    total_opponents = sum(!is.na(rtg_pre_num), na.rm = TRUE),
+    mean_opp_rtg = round(mean(rtg_pre_num, na.rm = TRUE),digits=0)
+  ) |>
+  arrange(desc(mean_opp_rtg)) |> 
+  left_join(
+    tbl1,
+    by="uscf_id"
+  ) |> 
+  arrange(ID) |> 
+  select(player_name,player_state,total_pts,rtg_pre,mean_opp_rtg)
 
 ```
