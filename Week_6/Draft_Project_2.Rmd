@@ -23,9 +23,16 @@ library(lubridate)
 # API call to NYS DEC DART
 # would be nice to call the API for NPDES permits (as listed in p_type)
 # dart <- read.socrata("https://data.ny.gov/resource/mbk7-f2r2.json")
-# write_csv(dart,"dart_3.7.2025.csv")
 
-dart <- read_csv("dart_3.7.2025.csv")
+
+dart <- read_csv("C:/Users/AGURKAS/OneDrive - Environmental Protection Agency (EPA)/Profile/Downloads/dart_3.7.2025.csv")
+
+dart <- dart |> 
+  mutate(date_received=as.Date(date_received, format = "%d-%m-%Y")) |> 
+  filter(date_received > '2014-12-31')
+
+write_csv(dart,"dart_2015_2025.csv")
+
 ```
 
 ```{r defining-regex-patterns}
