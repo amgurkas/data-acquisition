@@ -1,0 +1,17 @@
+---
+title: "Project_Proposal_Template"
+author: "Alyssa Gurkas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+Members: [insert names here]
+
+*Collaboration Tool(s)*: [Insert tools here, describing what we will use as a group to communicate, share code, and document our project.]
+
+*Data Source(s)*: [Insert informaton about the selected data sources, where the data can be found, and how to load it.]
+
+*Logical Model*: [Provide a logical model for the normalized database]
+
+*Entity-Relationship (ER) Diagram*: [Insert an ER diagram documenting the database design.]
+
