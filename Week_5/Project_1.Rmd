@@ -147,7 +147,7 @@ df_v4 <- df_v3 |>
   
 df_v5 <- df_v4 |> 
   pivot_wider(
-    id_cols = c(uscf_id,round),
+    id_cols = c(uscf_id,round), 
     names_from = metric,
     values_from = value
   ) |> 
@@ -158,7 +158,7 @@ df_v5 <- df_v4 |>
 Finally, a table is developed to show the data for each round.
 ```{r tbl2}
 tbl2 <- df_v5 |>
-  mutate(pt = case_when(type == "D"~.5,
+  mutate(pt = case_when(type == "D"~.5, # converting to points 
                         type== "W"~1,
                         type== "L"~0,
                         TRUE ~NA)
@@ -172,16 +172,7 @@ knitr::kable(head(tbl2, format ="markdown"))
 
 ```{r creating-final-table}
 # select Player's Name, Player's State, Total Number of Pts, Player's Pre-Rating,
-# Avg Pre-Chess Rating of Opponent for 1st player matched w/
-
-## EX: for the first player the results should be - 
-### Gary Hua, ON, 6.0, 1794, 1605
-#### 1605 was calculated by using the pre-tournament opponents' ratings of:
-##### 1436, 1563, 1600, 1610, 1649, 1663, 1716, and dividing by the total # of 
-###### games played. 
-
-# tbl1 has: player name, state, total_pts, rtg_pre, pair_id
-
+# Avg Pre-Chess Rating of Opponent for 1st player matched they were matched with
 avg_opp_rating <- left_join(
   tbl2,
   mutate(
@@ -205,4 +196,9 @@ avg_opp_rating <- left_join(
   arrange(ID) |> 
   select(player_name,player_state,total_pts,rtg_pre,mean_opp_rtg)
 
+knitr::kable(head(avg_opp_rating, format ="markdown"))
+```
+
+```{r write-csv}
+write_csv(avg_opp_rating,"output.csv")
 ```
