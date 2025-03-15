@@ -1,0 +1,23 @@
+---
+title: "Assignment_5"
+author: "Alyssa Gurkas"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    number_sections: false
+    toc_collapsed: true
+    toc_depth: 4
+---
+
+[Github Repository](https://github.com/amgurkas/data-acquisition/tree/main/Week_7/) 
+
+```{r set-chunk-options, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,      
+  results = "hide", 
+  warning = FALSE,  
+  error = FALSE,   
+  message = FALSE)
+```
