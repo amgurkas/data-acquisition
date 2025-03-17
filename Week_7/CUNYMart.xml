@@ -1,0 +1,323 @@
+<?xml version="1.0"?>
+<table>
+  <row>
+    <category>Electronics</category>
+    <item_name>Smartphone</item_name>
+    <item_id>101</item_id>
+    <brand>TechBrand</brand>
+    <price> 699.99</price>
+    <variation_id>101-A</variation_id>
+    <Color>Black</Color>
+    <Storage>64GB</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Electronics</category>
+    <item_name>Smartphone</item_name>
+    <item_id>101</item_id>
+    <brand>TechBrand</brand>
+    <price> 699.99</price>
+    <variation_id>101-B</variation_id>
+    <Color>White</Color>
+    <Storage>128GB</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Electronics</category>
+    <item_name>Laptop</item_name>
+    <item_id>102</item_id>
+    <brand>CompuBrand</brand>
+    <price>1099.99</price>
+    <variation_id>102-A</variation_id>
+    <Color>Silver</Color>
+    <Storage>256GB</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Electronics</category>
+    <item_name>Laptop</item_name>
+    <item_id>102</item_id>
+    <brand>CompuBrand</brand>
+    <price>1099.99</price>
+    <variation_id>102-B</variation_id>
+    <Color>Space Gray</Color>
+    <Storage>512GB</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Home Appliances</category>
+    <item_name>Refrigerator</item_name>
+    <item_id>201</item_id>
+    <brand>HomeCool</brand>
+    <price> 899.99</price>
+    <variation_id>201-A</variation_id>
+    <Color>Stainless Steel</Color>
+    <Storage>NA</Storage>
+    <Capacity>20 cu ft,</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Home Appliances</category>
+    <item_name>Refrigerator</item_name>
+    <item_id>201</item_id>
+    <brand>HomeCool</brand>
+    <price> 899.99</price>
+    <variation_id>201-B</variation_id>
+    <Color>White</Color>
+    <Storage>NA</Storage>
+    <Capacity>18 cu ft</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Home Appliances</category>
+    <item_name>Washing Machine</item_name>
+    <item_id>202</item_id>
+    <brand>CleanTech</brand>
+    <price> 499.99</price>
+    <variation_id>202-A</variation_id>
+    <Color>NA</Color>
+    <Storage>NA</Storage>
+    <Capacity>4.5 cu ft,</Capacity>
+    <Type>Front Load</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Home Appliances</category>
+    <item_name>Washing Machine</item_name>
+    <item_id>202</item_id>
+    <brand>CleanTech</brand>
+    <price> 499.99</price>
+    <variation_id>202-B</variation_id>
+    <Color>NA</Color>
+    <Storage>NA</Storage>
+    <Capacity>5.0 cu ft,</Capacity>
+    <Type>Top Load</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Clothing</category>
+    <item_name>T-Shirt</item_name>
+    <item_id>301</item_id>
+    <brand>FashionCo</brand>
+    <price>  19.99</price>
+    <variation_id>301-A</variation_id>
+    <Color>Blue</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>S</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Clothing</category>
+    <item_name>T-Shirt</item_name>
+    <item_id>301</item_id>
+    <brand>FashionCo</brand>
+    <price>  19.99</price>
+    <variation_id>301-B</variation_id>
+    <Color>Red</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>M</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Clothing</category>
+    <item_name>T-Shirt</item_name>
+    <item_id>301</item_id>
+    <brand>FashionCo</brand>
+    <price>  19.99</price>
+    <variation_id>301-C</variation_id>
+    <Color>Green</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>L</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Clothing</category>
+    <item_name>Jeans</item_name>
+    <item_id>302</item_id>
+    <brand>DenimWorks</brand>
+    <price>  49.99</price>
+    <variation_id>302-A</variation_id>
+    <Color>Dark Blue</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>32</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Clothing</category>
+    <item_name>Jeans</item_name>
+    <item_id>302</item_id>
+    <brand>DenimWorks</brand>
+    <price>  49.99</price>
+    <variation_id>302-B</variation_id>
+    <Color>Light Blue</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>34</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Books</category>
+    <item_name>Fiction Novel</item_name>
+    <item_id>401</item_id>
+    <brand>-</brand>
+    <price>  14.99</price>
+    <variation_id>401-A</variation_id>
+    <Color>NA</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>Hardcover</Format>
+    <Language>English</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Books</category>
+    <item_name>Fiction Novel</item_name>
+    <item_id>401</item_id>
+    <brand>-</brand>
+    <price>  14.99</price>
+    <variation_id>401-B</variation_id>
+    <Color>NA</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>Paperback</Format>
+    <Language>Spanish</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Books</category>
+    <item_name>Non-Fiction Guide</item_name>
+    <item_id>402</item_id>
+    <brand>-</brand>
+    <price>  24.99</price>
+    <variation_id>402-A</variation_id>
+    <Color>NA</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>eBook</Format>
+    <Language>English</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Books</category>
+    <item_name>Non-Fiction Guide</item_name>
+    <item_id>402</item_id>
+    <brand>-</brand>
+    <price>  24.99</price>
+    <variation_id>402-B</variation_id>
+    <Color>NA</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>Paperback</Format>
+    <Language>French</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Sports Equipment</category>
+    <item_name>Basketball</item_name>
+    <item_id>501</item_id>
+    <brand>SportsGear</brand>
+    <price>  29.99</price>
+    <variation_id>501-A</variation_id>
+    <Color>Orange</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>Size 7</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>NA</Material>
+  </row>
+  <row>
+    <category>Sports Equipment</category>
+    <item_name>Tennis Racket</item_name>
+    <item_id>502</item_id>
+    <brand>RacketPro</brand>
+    <price>  89.99</price>
+    <variation_id>502-A</variation_id>
+    <Color>Black</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>Graphite</Material>
+  </row>
+  <row>
+    <category>Sports Equipment</category>
+    <item_name>Tennis Racket</item_name>
+    <item_id>502</item_id>
+    <brand>RacketPro</brand>
+    <price>  89.99</price>
+    <variation_id>502-B</variation_id>
+    <Color>Silver</Color>
+    <Storage>NA</Storage>
+    <Capacity>NA</Capacity>
+    <Type>NA</Type>
+    <Size>NA</Size>
+    <Format>NA</Format>
+    <Language>NA</Language>
+    <Material>Aluminum</Material>
+  </row>
+</table>

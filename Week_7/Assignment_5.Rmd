@@ -1,18 +1,20 @@
 ---
-title: "Assignment_5"
+title: "Converting Data to JSON, HTML, XML, and Parquet in R"
 author: "Alyssa Gurkas"
 date: "`r Sys.Date()`"
 output: 
   html_document:
     theme: cerulean
+    highlight: "tango"  # Enables syntax highlighting
+    code_folding: show 
     toc: true
     toc_float: true
-    number_sections: false
+    toc_depth: 2
     toc_collapsed: true
-    toc_depth: 4
+      
 ---
 
-[Github Repository](https://github.com/amgurkas/data-acquisition/tree/main/Week_7/) 
+[Github Repository](https://github.com/amgurkas/data-acquisition/tree/main/Week_7) 
 
 ```{r set-chunk-options, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,      
@@ -20,4 +22,168 @@ knitr::opts_chunk$set(echo = TRUE,
   warning = FALSE,  
   error = FALSE,   
   message = FALSE)
+options(kableExtra.auto_format = FALSE)
 ```
+
+
+```{r load-libraries, include=FALSE}
+library(tidyverse)
+library(jsonlite)
+library(xtable)
+library(XML)
+library(nanoparquet)
+library(knitr)
+library(kableExtra)
+```
+
+# Introduction
+In this report, unstructured data from copied from a PDF file will be cleaned, 
+and converted into JSON, HTML, XML, and Parquet. 
+
+<br>
+
+The code below reads in the text copied from the PDF file:
+```{r loading-raw-txt, class.source='klippy'}
+txt <- read_csv(
+    "Category,Item Name,Item ID,Brand,Price,Variation ID,Variation Details
+Electronics,Smartphone,101,TechBrand,699.99,101-A,Color: Black, Storage: 64GB
+Electronics,Smartphone,101,TechBrand,699.99,101-B,Color: White, Storage: 128GB
+Electronics,Laptop,102,CompuBrand,1099.99,102-A,Color: Silver, Storage: 256GB
+Electronics,Laptop,102,CompuBrand,1099.99,102-B,Color: Space Gray, Storage: 512GB
+Home Appliances,Refrigerator,201,HomeCool,899.99,201-A,Color: Stainless Steel, Capacity: 20 cu ft,
+Home Appliances,Refrigerator,201,HomeCool,899.99,201-B,Color: White, Capacity: 18 cu ft
+Home Appliances,Washing Machine,202,CleanTech,499.99,202-A,Type: Front Load, Capacity: 4.5 cu ft,
+Home Appliances,Washing Machine,202,CleanTech,499.99,202-B,Type: Top Load, Capacity: 5.0 cu ft,
+Clothing,T-Shirt,301,FashionCo,19.99,301-A,Color: Blue, Size: S
+Clothing,T-Shirt,301,FashionCo,19.99,301-B,Color: Red, Size: M
+Clothing,T-Shirt,301,FashionCo,19.99,301-C,Color: Green, Size: L
+Clothing,Jeans,302,DenimWorks,49.99,302-A,Color: Dark Blue, Size: 32
+Clothing,Jeans,302,DenimWorks,49.99,302-B,Color: Light Blue, Size: 34
+Books,Fiction Novel,401,-,14.99,401-A,Format: Hardcover, Language: English
+Books,Fiction Novel,401,-,14.99,401-B,Format: Paperback, Language: Spanish
+Books,Non-Fiction Guide,402,-,24.99,402-A,Format: eBook, Language: English
+Books,Non-Fiction Guide,402,-,24.99,402-B,Format: Paperback, Language: French
+Sports Equipment,Basketball,501,SportsGear,29.99,501-A,Size: Size 7, Color: Orange
+Sports Equipment,Tennis Racket,502,RacketPro,89.99,502-A,Material: Graphite, Color: Black
+Sports Equipment,Tennis Racket,502,RacketPro,89.99,502-B,Material: Aluminum, Color: Silver"
+) |> 
+  # change names to be in snake case
+  janitor::clean_names()
+```
+
+<br>
+
+In the code below, the data is cleaned so that there are no longer multiple
+values in the `variation_details` column. This will produce more null values,
+but will make it simpler to analyze the variation details for each item.
+```{r cleaning-variation-col, class.source='klippy'}
+df <- txt |> 
+  # split the terms by the comma
+  separate_wider_delim(variation_details, delim = ", ",names_sep = "_") |>
+  # Split again by colon and space
+  separate_wider_delim(c("variation_details_1","variation_details_2"), delim =": ", names_sep = "_") |>  
+  # pivot longer so that the variation categories are in each row
+  pivot_longer(
+     cols = matches("details"),
+     names_to = c("variable", ".value"),
+     names_pattern = "([0-9]{1})_([0-9]{1})"
+   ) |>
+  select(-variable) |>
+  # pivot wider to make each category a column
+  pivot_wider(
+    names_from = `1`,
+    values_from = `2`
+  )
+```
+
+<br>
+
+## Convert Data to Various Data Types
+Once the data is cleaned, it can be converted into different formats, such as 
+JSON, HTML, XML, and Parquet.
+
+### JSON
+JSON is largely used web applications and APIs due to its lightweight, 
+human-readable format that integrates well with modern data pipelines. 
+```{r json-formatting, class.source='klippy'}
+# convert df to json
+json_data <- toJSON(df, pretty = TRUE)
+
+# create json file
+write(json_data, "CUNYMart.json")
+```
+
+### HTML 
+HTML formatting is best for displaying structured content on web pages. Examples
+are using HTML to generate reports, dashboards, and formatted text to host on a 
+website.
+```{r html-formatting, class.source='klippy'}
+# create html data
+html_data <- xtable(df)
+# create html file
+print.xtable(html_data, type="html", file="CUNYMart.html")
+```
+
+### XML
+XML is used for data exchange in enterprise applications, web services, and 
+configurations. 
+```{r xml-formatting, class.source='klippy'}
+# create a new xml doc
+doc_xml <- newXMLDoc(isHTML = FALSE)
+
+# create an empty table node
+table_node <- newXMLNode("table", doc = doc_xml)
+
+# create a function to convert every row in the df into new node
+row_data <- apply(df, 1, function(x) {
+  z1 <- newXMLNode('row') # create a new node for each row
+  addChildren(z1, lapply(names(x), function(y) newXMLNode(y, x[y])))
+})
+
+# add row data to the table node
+xmlParent(row_data) <- table_node
+
+# save as xml file
+saveXML(doc_xml, file = "CUNYMart.xml")
+```
+
+### Parquet 
+A good use case for Parquet is big data analytics and storage, because it 
+provides efficient compression, making it ideal for inexpensive cloud storage.
+```{r parquet-formatting, class.source='klippy'}
+# write df to parquet file
+write_parquet(
+  df,
+  "CUNYMart.parquet"
+)
+```
+
+## Data Types (JSON, HTML, XML, and Parquet)
+```{r pros-cons-data-type-df, include=FALSE}
+# create tibble with pros and cons of data types
+data_format_comparison <- tibble(
+  Format = c("JSON", "HTML", "XML", "Parquet"),
+  Pros = c(
+    "Lightweight, human-readable, widely used in web APIs, and supports nested data structures",
+    "Standard for web pages, ideal for visualizing data in tables on websites",
+    "Designed to store and transport data, optimal for simple and readable data",
+    "Very lightweight, inexpensive option for storing big data"
+  ),
+  Cons = c(
+    "No specified data types, no error handling mechanism",
+    "Requires a lot of code to produce an output, can be difficult to understand due to the structure",
+    "Large files, can be expensive to store for larger datasets",
+    "Isn't human-readable like CSVs or JSON"
+  )
+)
+```
+
+<br>
+
+```{r gen-table,  echo=FALSE, include=TRUE, results='asis'}
+# generate a table to display pros and cons
+knitr::kable(data_format_comparison) |> 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+

@@ -1,0 +1,202 @@
+[
+  {
+    "category": "Electronics",
+    "item_name": "Smartphone",
+    "item_id": 101,
+    "brand": "TechBrand",
+    "price": 699.99,
+    "variation_id": "101-A",
+    "Color": "Black",
+    "Storage": "64GB"
+  },
+  {
+    "category": "Electronics",
+    "item_name": "Smartphone",
+    "item_id": 101,
+    "brand": "TechBrand",
+    "price": 699.99,
+    "variation_id": "101-B",
+    "Color": "White",
+    "Storage": "128GB"
+  },
+  {
+    "category": "Electronics",
+    "item_name": "Laptop",
+    "item_id": 102,
+    "brand": "CompuBrand",
+    "price": 1099.99,
+    "variation_id": "102-A",
+    "Color": "Silver",
+    "Storage": "256GB"
+  },
+  {
+    "category": "Electronics",
+    "item_name": "Laptop",
+    "item_id": 102,
+    "brand": "CompuBrand",
+    "price": 1099.99,
+    "variation_id": "102-B",
+    "Color": "Space Gray",
+    "Storage": "512GB"
+  },
+  {
+    "category": "Home Appliances",
+    "item_name": "Refrigerator",
+    "item_id": 201,
+    "brand": "HomeCool",
+    "price": 899.99,
+    "variation_id": "201-A",
+    "Color": "Stainless Steel",
+    "Capacity": "20 cu ft,"
+  },
+  {
+    "category": "Home Appliances",
+    "item_name": "Refrigerator",
+    "item_id": 201,
+    "brand": "HomeCool",
+    "price": 899.99,
+    "variation_id": "201-B",
+    "Color": "White",
+    "Capacity": "18 cu ft"
+  },
+  {
+    "category": "Home Appliances",
+    "item_name": "Washing Machine",
+    "item_id": 202,
+    "brand": "CleanTech",
+    "price": 499.99,
+    "variation_id": "202-A",
+    "Capacity": "4.5 cu ft,",
+    "Type": "Front Load"
+  },
+  {
+    "category": "Home Appliances",
+    "item_name": "Washing Machine",
+    "item_id": 202,
+    "brand": "CleanTech",
+    "price": 499.99,
+    "variation_id": "202-B",
+    "Capacity": "5.0 cu ft,",
+    "Type": "Top Load"
+  },
+  {
+    "category": "Clothing",
+    "item_name": "T-Shirt",
+    "item_id": 301,
+    "brand": "FashionCo",
+    "price": 19.99,
+    "variation_id": "301-A",
+    "Color": "Blue",
+    "Size": "S"
+  },
+  {
+    "category": "Clothing",
+    "item_name": "T-Shirt",
+    "item_id": 301,
+    "brand": "FashionCo",
+    "price": 19.99,
+    "variation_id": "301-B",
+    "Color": "Red",
+    "Size": "M"
+  },
+  {
+    "category": "Clothing",
+    "item_name": "T-Shirt",
+    "item_id": 301,
+    "brand": "FashionCo",
+    "price": 19.99,
+    "variation_id": "301-C",
+    "Color": "Green",
+    "Size": "L"
+  },
+  {
+    "category": "Clothing",
+    "item_name": "Jeans",
+    "item_id": 302,
+    "brand": "DenimWorks",
+    "price": 49.99,
+    "variation_id": "302-A",
+    "Color": "Dark Blue",
+    "Size": "32"
+  },
+  {
+    "category": "Clothing",
+    "item_name": "Jeans",
+    "item_id": 302,
+    "brand": "DenimWorks",
+    "price": 49.99,
+    "variation_id": "302-B",
+    "Color": "Light Blue",
+    "Size": "34"
+  },
+  {
+    "category": "Books",
+    "item_name": "Fiction Novel",
+    "item_id": 401,
+    "brand": "-",
+    "price": 14.99,
+    "variation_id": "401-A",
+    "Format": "Hardcover",
+    "Language": "English"
+  },
+  {
+    "category": "Books",
+    "item_name": "Fiction Novel",
+    "item_id": 401,
+    "brand": "-",
+    "price": 14.99,
+    "variation_id": "401-B",
+    "Format": "Paperback",
+    "Language": "Spanish"
+  },
+  {
+    "category": "Books",
+    "item_name": "Non-Fiction Guide",
+    "item_id": 402,
+    "brand": "-",
+    "price": 24.99,
+    "variation_id": "402-A",
+    "Format": "eBook",
+    "Language": "English"
+  },
+  {
+    "category": "Books",
+    "item_name": "Non-Fiction Guide",
+    "item_id": 402,
+    "brand": "-",
+    "price": 24.99,
+    "variation_id": "402-B",
+    "Format": "Paperback",
+    "Language": "French"
+  },
+  {
+    "category": "Sports Equipment",
+    "item_name": "Basketball",
+    "item_id": 501,
+    "brand": "SportsGear",
+    "price": 29.99,
+    "variation_id": "501-A",
+    "Color": "Orange",
+    "Size": "Size 7"
+  },
+  {
+    "category": "Sports Equipment",
+    "item_name": "Tennis Racket",
+    "item_id": 502,
+    "brand": "RacketPro",
+    "price": 89.99,
+    "variation_id": "502-A",
+    "Color": "Black",
+    "Material": "Graphite"
+  },
+  {
+    "category": "Sports Equipment",
+    "item_name": "Tennis Racket",
+    "item_id": 502,
+    "brand": "RacketPro",
+    "price": 89.99,
+    "variation_id": "502-B",
+    "Color": "Silver",
+    "Material": "Aluminum"
+  }
+]
