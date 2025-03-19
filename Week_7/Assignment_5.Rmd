@@ -35,6 +35,7 @@ library(nanoparquet)
 library(knitr)
 library(kableExtra)
 library(rvest)
+library(xml2)
 ```
 
 # Introduction
@@ -120,7 +121,7 @@ print(json_data)
 HTML formatting is best for displaying structured content on web pages. Examples
 are using HTML to generate reports, dashboards, and formatted text to host on a 
 website.
-```{r html-formatting}
+```{r html-formatting, echo = TRUE, results = "asis"}
 # create html data
 html_data <- xtable(df)
 # create html file
@@ -132,7 +133,7 @@ print(read_html(x = "CUNYMart.html"))
 ### XML
 XML is used for data exchange in enterprise applications, web services, and 
 configurations. 
-```{r xml-formatting, class.source='klippy'}
+```{r xml-formatting, echo = TRUE, results = "asis"}
 # create a new xml doc
 doc_xml <- newXMLDoc(isHTML = FALSE)
 
