@@ -170,7 +170,7 @@ tbl2 <- df_v5 |>
 knitr::kable(head(tbl2, format ="markdown"))
 ```
 
-```{r creating-final-table}
+```{r creating-final-table, echo=TRUE, results="asis"}
 # select Player's Name, Player's State, Total Number of Pts, Player's Pre-Rating,
 # Avg Pre-Chess Rating of Opponent for 1st player matched they were matched with
 avg_opp_rating <- left_join(
