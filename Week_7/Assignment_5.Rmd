@@ -34,6 +34,7 @@ library(XML)
 library(nanoparquet)
 library(knitr)
 library(kableExtra)
+library(rvest)
 ```
 
 # Introduction
@@ -43,7 +44,7 @@ and converted into JSON, HTML, XML, and Parquet.
 <br>
 
 The code below reads in the text copied from the PDF file:
-```{r loading-raw-txt, class.source='klippy'}
+```{r loading-raw-txt}
 txt <- read_csv(
     "Category,Item Name,Item ID,Brand,Price,Variation ID,Variation Details
 Electronics,Smartphone,101,TechBrand,699.99,101-A,Color: Black, Storage: 64GB
@@ -76,7 +77,7 @@ Sports Equipment,Tennis Racket,502,RacketPro,89.99,502-B,Material: Aluminum, Col
 In the code below, the data is cleaned so that there are no longer multiple
 values in the `variation_details` column. This will produce more null values,
 but will make it simpler to analyze the variation details for each item.
-```{r cleaning-variation-col, class.source='klippy'}
+```{r cleaning-variation-col}
 df <- txt |> 
   # split the terms by the comma
   separate_wider_delim(variation_details, delim = ", ",names_sep = "_") |>
@@ -105,23 +106,27 @@ JSON, HTML, XML, and Parquet.
 ### JSON
 JSON is largely used web applications and APIs due to its lightweight, 
 human-readable format that integrates well with modern data pipelines. 
-```{r json-formatting, class.source='klippy'}
+```{r json-formatting, echo = TRUE, results = "asis"}
 # convert df to json
 json_data <- toJSON(df, pretty = TRUE)
 
 # create json file
 write(json_data, "CUNYMart.json")
+
+print(json_data)
 ```
 
 ### HTML 
 HTML formatting is best for displaying structured content on web pages. Examples
 are using HTML to generate reports, dashboards, and formatted text to host on a 
 website.
-```{r html-formatting, class.source='klippy'}
+```{r html-formatting}
 # create html data
 html_data <- xtable(df)
 # create html file
 print.xtable(html_data, type="html", file="CUNYMart.html")
+
+print(read_html(x = "CUNYMart.html"))
 ```
 
 ### XML
@@ -145,6 +150,9 @@ xmlParent(row_data) <- table_node
 
 # save as xml file
 saveXML(doc_xml, file = "CUNYMart.xml")
+
+read_doc_xml <- read_xml("CUNYMart.xml")
+print(read_doc_xml)
 ```
 
 ### Parquet 
