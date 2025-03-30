@@ -121,13 +121,17 @@ print(json_data)
 HTML formatting is best for displaying structured content on web pages. Examples
 are using HTML to generate reports, dashboards, and formatted text to host on a 
 website.
-```{r html-formatting, echo = TRUE, results = "asis"}
-# create html data
+```{r html-formatting, echo = TRUE, include=TRUE, results="markup"}
+# convert to HTML table
 html_data <- xtable(df)
-# create html file
-print.xtable(html_data, type="html", file="CUNYMart.html")
 
-print(read_html(x = "CUNYMart.html"))
+# Save HTML to a file
+html_output <- print.xtable(html_data, type="html", print.results=FALSE)
+write_lines(html_output, "CUNYMart.html")
+
+# Read and display the HTML as plain text
+html_text <- readLines("CUNYMart.html")
+cat(paste(html_text, collapse="\n"))
 ```
 
 ### XML
@@ -155,6 +159,7 @@ saveXML(doc_xml, file = "CUNYMart.xml")
 read_doc_xml <- read_xml("CUNYMart.xml")
 print(read_doc_xml)
 ```
+
 
 ### Parquet 
 A good use case for Parquet is big data analytics and storage, because it 
