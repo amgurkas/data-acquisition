@@ -1,0 +1,142 @@
+---
+title: "Insert Here"
+author: "Alyssa Gurkas"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    number_sections: false
+    toc_collapsed: true
+    toc_depth: 4
+---
+
+[Github Repository](https://github.com/amgurkas/data-acquisition/tree/main/Week_9/) 
+
+```{r set-chunk-options, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,      
+  results = "hide", 
+  warning = FALSE,  
+  error = FALSE,   
+  message = FALSE)
+```
+
+```{r load-libraries}
+library(tidyverse)
+library(nytimes)
+library(httr)
+library(jsonlite)
+```
+
+## "Manual" API Call using the `httr` and `jsonlite` packages. 
+```{r manual-api-call}
+# Retrieve API key from environment
+api_key <- Sys.getenv("NYTIMES_API_KEY")
+
+# Save the Top Sports Stories URL with the API Key included
+url <- paste0("https://api.nytimes.com/svc/topstories/v2/sports.json?api-key=", 
+              api_key)
+
+# Fetch data
+response <- GET(url)
+# Check response type
+http_type(response)
+# Check for errors
+http_error(response)
+# Convert data from JSON to Text
+data <- fromJSON(content(response, as="text"))
+
+# Create sample dataframe of results
+articles <- data$results %>%
+  select(title, abstract, url, published_date)
+```
+
+## [NYTimes Package](https://github.com/news-r/nytimes)
+Another way to retrieve the data from the NYTimes API call is using their 
+R Package, and the function ny_archive(). 
+```{r nytimes-package}
+# get all articles from last five years
+archive <- ny_archive(2024, 7)
+
+# displaying the structure of the archive obj
+str(archive[1:5]) 
+```
+
+```{r keyword-ele-analysis}
+# displaying the structure of the first keywords element within the obj archive
+str(archive[[1]]$keywords)
+
+# Check if ESPN is a keyword in the first article using a grepl statement
+any(grepl("ESPN", archive[[1]]$keywords))
+
+# Test if ESPN is a keyword in the first article using stringr function
+any(str_detect(unlist(archive[[1]]$keywords),"ESPN"))
+
+# Create a test function that returns TRUE if 'ESPN' is in the keywords
+contains_ESPN <- function(article) {
+  any(str_detect(str_to_upper(unlist(archive[[article]]$keywords)),"ESPN"))
+}
+
+# Test the function with the first article in the archive
+contains_ESPN(archive[[1]])  # Should return TRUE or FALSE
+```
+
+```{r keyword-funct}
+# create a function that will search through the archive list
+# and subset articles containing the keyword "ESPN"
+filter_espn_articles <- function(article_list) {
+  Filter(function(article) {
+    # Check if the article contains the 'keywords' field
+    if (!"keywords" %in% names(article)) return(FALSE)
+    
+    # Extract keywords (assuming it's a list of named lists)
+    keyword_list <- article$keywords 
+    
+    # Check if any keyword contains "ESPN"
+    contains_espn <- any(sapply(keyword_list, function(keyword) {
+      # Convert keyword to lowercase for case-insensitive matching
+      grepl("espn", keyword, ignore.case = TRUE)
+    }))
+    
+    return(contains_espn)
+  }, article_list)
+}
+
+espn_articles <- filter_espn_articles(archive)
+```
+
+```{r}
+# Flatten the list and convert nested elements to data frames
+flattened_data <- map_df(filter_espn_articles(), function(x) {
+  if (is.list(x) {
+    # If the element is a list, extract the relevant data
+    # Example: assuming you want 'title' and 'abstract' from the nested list
+    tibble(
+      title = x$title,
+      abstract = x$abstract
+    )
+  } else {
+    # If it's not a list, just return the element as a data frame
+    tibble(data = x)
+  }
+})
+
+# View the resulting data frame
+print(flattened_data)
+```
+
+
+```{r lapply}
+
+lapply(espn_articles, function(article) {
+  list(title = article$title, abstract = article$abstract)
+})
+```
+
+**Potential Analysis for ESPN-Related Insights**
+*Frequency Analysis*: How often does ESPN appear in NYT sports articles?
+*Sentiment Analysis*: What is the sentiment of ESPN-related coverage?
+*Topic Modeling*: Identify trending topics associated with ESPN.
+
+
