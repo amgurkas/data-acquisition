@@ -85,54 +85,28 @@ contains_ESPN(archive[[1]])  # Should return TRUE or FALSE
 ```{r keyword-funct}
 # create a function that will search through the archive list
 # and subset articles containing the keyword "ESPN"
-filter_espn_articles <- function(article_list) {
-  Filter(function(article) {
-    # Check if the article contains the 'keywords' field
-    if (!"keywords" %in% names(article)) return(FALSE)
-    
-    # Extract keywords (assuming it's a list of named lists)
-    keyword_list <- article$keywords 
-    
-    # Check if any keyword contains "ESPN"
-    contains_espn <- any(sapply(keyword_list, function(keyword) {
-      # Convert keyword to lowercase for case-insensitive matching
-      grepl("espn", keyword, ignore.case = TRUE)
-    }))
-    
-    return(contains_espn)
-  }, article_list)
+filter_espn_articles <- function(article_index) {
+  sublist <- archive[[article_index]]
+  news_desk <- sublist$news_desk
+  keywords_list <- sublist[["keywords"]]
+  contains_espn <- any(grepl("espn", keywords_list, ignore.case = TRUE))
+  return_df <- data.frame(article_index=article_index,
+                          news_desk=news_desk,
+                          contains_espn=contains_espn)
+  return(return_df)
 }
 
-espn_articles <- filter_espn_articles(archive)
+result <- map_df(
+                seq_along(archive),
+                filter_espn_articles
+                )
 ```
 
-```{r}
-# Flatten the list and convert nested elements to data frames
-flattened_data <- map_df(filter_espn_articles(), function(x) {
-  if (is.list(x) {
-    # If the element is a list, extract the relevant data
-    # Example: assuming you want 'title' and 'abstract' from the nested list
-    tibble(
-      title = x$title,
-      abstract = x$abstract
-    )
-  } else {
-    # If it's not a list, just return the element as a data frame
-    tibble(data = x)
-  }
-})
-
-# View the resulting data frame
-print(flattened_data)
+```{r sports_nd_df}
+# sports_nd <- result |> 
+#   filter(news_desk=="Sports")
 ```
 
-
-```{r lapply}
-
-lapply(espn_articles, function(article) {
-  list(title = article$title, abstract = article$abstract)
-})
-```
 
 **Potential Analysis for ESPN-Related Insights**
 *Frequency Analysis*: How often does ESPN appear in NYT sports articles?
