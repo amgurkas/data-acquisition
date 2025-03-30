@@ -11,7 +11,6 @@ output:
     toc_float: true
     toc_depth: 2
     toc_collapsed: true
-      
 ---
 
 [Github Repository](https://github.com/amgurkas/data-acquisition/tree/main/Week_7) 
@@ -24,7 +23,6 @@ knitr::opts_chunk$set(echo = TRUE,
   message = FALSE)
 options(kableExtra.auto_format = FALSE)
 ```
-
 
 ```{r load-libraries, include=FALSE}
 library(tidyverse)
