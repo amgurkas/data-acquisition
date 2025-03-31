@@ -1,5 +1,5 @@
 ---
-title: "Insert Here"
+title: "Using the NYTimes Archive API to Explore How Often ESPN is Mentioned"
 author: "Alyssa Gurkas"
 date: "`r Sys.Date()`"
 output: 
@@ -50,17 +50,20 @@ data <- fromJSON(content(response, as="text"))
 # Create sample dataframe of results
 articles <- data$results %>%
   select(title, abstract, url, published_date)
+
+
 ```
 
 ## [NYTimes Package](https://github.com/news-r/nytimes)
-Another way to retrieve the data from the NYTimes API call is using their 
-R Package, and the function ny_archive(). 
+Another way to retrieve New York Times data is through the `nytimes` R Package. 
+The code below uses the function ny_archive() to retrieve articles published in
+July 2024. 
 ```{r nytimes-package}
-# get all articles from last five years
+# get all articles from July 2024
 archive <- ny_archive(2024, 7)
 
-# displaying the structure of the archive obj
-str(archive[1:5]) 
+# Display the structure of the archive obj
+# str(archive[1:5])
 ```
 
 ```{r keyword-ele-analysis}
@@ -73,44 +76,117 @@ any(grepl("ESPN", archive[[1]]$keywords))
 # Test if ESPN is a keyword in the first article using stringr function
 any(str_detect(unlist(archive[[1]]$keywords),"ESPN"))
 
-# Create a test function that returns TRUE if 'ESPN' is in the keywords
-contains_ESPN <- function(article) {
-  any(str_detect(str_to_upper(unlist(archive[[article]]$keywords)),"ESPN"))
+contains_espn_test <- function(article) {
+  # Access keywords from archive obj
+  if (!is.null(article$keywords)) {
+    any(str_detect(str_to_upper(unlist(article$keywords)), "ESPN"))
+  } else {
+    FALSE  # Return FALSE if no keywords exist
+  }
 }
-
-# Test the function with the first article in the archive
-contains_ESPN(archive[[1]])  # Should return TRUE or FALSE
+# Test with first article 
+contains_espn_test(archive[[1]])
 ```
 
 ```{r keyword-funct}
 # create a function that will search through the archive list
 # and subset articles containing the keyword "ESPN"
-filter_espn_articles <- function(article_index) {
-  sublist <- archive[[article_index]]
+contains_espn <- function(article_index,articles_list) {
+  # define the sublist as each NYTimes article
+  sublist <- articles_list[[article_index]]
+  # create a vector of the news desks
   news_desk <- sublist$news_desk
+  # create a vector of the main headline
+  headline <- sublist$headline$main
+  # create a list of the keywords
   keywords_list <- sublist[["keywords"]]
-  contains_espn <- any(grepl("espn", keywords_list, ignore.case = TRUE))
+  # create a vector of the snippets
+  snippet <- sublist$snippet
+  # check if espn appears in the key words list
+  keyword_espn <- any(grepl("espn", keywords_list, ignore.case = TRUE))
+  # check if espn appears in the headline
+  headline_espn <- any(grepl("espn", headline, ignore.case=TRUE))
+  # check if espn appears in the snippet
+  snippet_espn <- any(grepl("espn", snippet, ignore.case=TRUE))
+  # check if espn appears in any of the elements
+  any_espn <- any(keyword_espn,
+                  headline_espn,
+                  snippet_espn)
+  # create a df with the desired cols
   return_df <- data.frame(article_index=article_index,
                           news_desk=news_desk,
-                          contains_espn=contains_espn)
+                          keyword_espn=keyword_espn,
+                          headline_espn=headline_espn,
+                          snippet_espn=snippet_espn,
+                          any_espn=any_espn)
+  return(return_df)
+}
+```
+
+```{r month-espn-summary}
+# calculate start date as 1 year, 3 months, and 29 days from today
+start_date <- today() - years (1) - months(3) - days(29)
+# calculate end date as 3 months, and 29 days from today
+end_date <- today() - months(3) - days(29)
+# create a vector of the sequence of dates separating by 1 month apart
+range <- seq(ymd(start_date),ymd(end_date), by = '1 month')
+
+summarize_month <- function (year_month) {
+  # define month as the respective month
+  month <- month(year_month)
+  # define month as the respective year
+  year <- year(year_month)
+  # get data from ny_archive function using the respective month and year
+  res <- ny_archive(year,month)
+  # map contains_espn function to the response from archive API
+  month_df <- map_df(seq_along(res), .f=~contains_espn(.x,res))
+  # summarise findings where n= total articles and espn= # of articles containing 
+  # espn in headline, snippet, or keyword
+  month_summary <- summarise(month_df,
+                             n=n(),
+                             espn=sum(any_espn))
+  return_df <- month_summary |> 
+    # add cols to record year and month
+    mutate(
+      year=year, 
+      month=month
+    )
   return(return_df)
 }
 
-result <- map_df(
-                seq_along(archive),
-                filter_espn_articles
-                )
+# map range funct to iterate through date range
+summary_2024_espn <- map_df(range,function(x){
+  summary <- summarize_month(x)
+  # sleep so do not overwhelm API
+  Sys.sleep(10)
+  # return results
+  return(summary)
+}
+)
 ```
 
-```{r sports_nd_df}
-# sports_nd <- result |> 
-#   filter(news_desk=="Sports")
+```{r barchart, results='asis'}
+# Created date column
+plot_espn_data <- summary_2024_espn |> 
+  mutate(date = make_date(year, month, 1))  # Using 1st of each month for plotting
+
+# Create the plot
+ggplot(plot_espn_data, aes(x = date, y = espn)) +
+  geom_line(color = "#E41A1C", linewidth = 1) +  # ESPN brand red color
+  geom_point(color = "#E41A1C", size = 3) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+  scale_y_continuous(breaks = seq(0, max(plot_espn_data$espn) + 1)) +
+  labs(title = "NYTimes Articles Mentioning ESPN (Dec 2023 - Dec 2024)",
+       subtitle = "Count of articles containing 'ESPN' by month",
+       x = "Month",
+       y = "Number of Articles",
+       caption = "Source: NYTimes Archive") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major = element_line(color = "grey90"),
+    panel.grid.minor = element_blank()
+  )
 ```
-
-
-**Potential Analysis for ESPN-Related Insights**
-*Frequency Analysis*: How often does ESPN appear in NYT sports articles?
-*Sentiment Analysis*: What is the sentiment of ESPN-related coverage?
-*Topic Modeling*: Identify trending topics associated with ESPN.
-
 
