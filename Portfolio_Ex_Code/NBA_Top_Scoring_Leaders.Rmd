@@ -19,12 +19,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Loading the NBA Data, originally taken from the [NBA Advanced Stats Site](https://www.nba.com/stats/alltime-leaders).
 ```{r load-data}
-nba_file <- './csv/nba-top-10-career-scoring-leaders-yearly.csv'
-nba_df <- read_csv(nba_file)
+nba_df <- read_csv("nba-top-10-career-scoring-leaders-yearly.csv")
 ```
 
 ## Exploratory Data Analysis
-```{r eda}
+
+Selecting from a range can be done either by filtering and using the ">" and "=" 
+operator, or by nesting the filter and between functions:
+```{r eda-range}
 nba_df_1960s_random_10 <- nba_df %>% 
   filter(YearEnd >= 1960 & YearEnd <= 1969) %>% 
   sample_n(10)
@@ -36,21 +38,26 @@ nba_df_1960s_random_10 <- nba_df %>%
   filter(between(YearEnd,1960,1969)) %>% 
   sample_n(10)
 nba_df_1960s_random_10
+```
 
+The filter function can also be used on strings, for example, the code below
+filters for Lebron James' stats:
+```{r eda-filtering} 
 # filter() for just LeBron
 lebron <- nba_df %>% 
   filter(Player=="LeBron James")
 lebron
+```
 
+```{r eda}
 nba_grouped <- nba_df %>% 
+  # group by player
   group_by(Player) %>% 
+  # calc # of years top player & create col name Top_10_Yrs
   summarize(Top_10_Yrs=n()) %>% 
+  # arrange by # of years
   arrange(desc(Top_10_Yrs)) 
-# View() -- don't run view when you are also saving to a new object
 
-# name the column header, so it's not just literally n()
-nba_grouped %>% 
-  View()
 
 ### sum()----
 # get sum total of Top 10 points by year
@@ -59,14 +66,13 @@ nba_df_sum <- nba_df %>%
   summarize(TotPts = sum(CareerPts)) %>% 
   arrange(desc(TotPts)) 
 
-nba_df_sum %>% 
-  View()
-
 nba_2020_df <- nba_df[nba_df["YearEnd"] == 2020,]
-nba_2020_df
+# insert code w/ table
 
 nba_2020_2022_df <- nba_df[nba_df["YearEnd"] >= 2020,]
 nba_2020_2022_df[15:25,]
+# insert code w/ table 
+
 ```
 
 ```{r}
