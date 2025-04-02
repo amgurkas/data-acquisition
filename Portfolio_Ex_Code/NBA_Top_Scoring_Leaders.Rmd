@@ -2,10 +2,55 @@
 title: "Creating a Time Series Plot of NBA All-Time Scoring Leaders (1950-2022)"
 author: "Alyssa Gurkas"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    number_sections: false
+    toc_collapsed: true
+    toc_depth: 3
 ---
 
-```{r load-libraries, include=TRUE}
+```{r load-here, echo = FALSE,results = "hide", warning = FALSE,  error = FALSE,message = FALSE}
+library(here) #used to direct files
+```
+
+### Introduction
+This post walks through how to create an animated graph using the `gganimate`
+and `gifski` packages. With these R packages you can create a plot like this:
+
+<br>
+
+![Animated plot depicting NBA Top 10 Scoring Players from 1950-2022.](`r here("Portfolio_Ex_Code/NBA-Top-10-Leading_Scorers-All-Time-1950-2022.gif")`){width=80%}
+
+<br>
+
+### Load Libraries
+```{r rmd-settings, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      results = "hide", 
+                      warning = FALSE,  
+                      error = FALSE,   
+                      message = FALSE)
+
+knit_table <- function(df, caption='', position = 'left') {
+  kbl(df, format = "html", escape = FALSE, caption = caption) |>
+    kable_styling(
+      full_width = F,
+      position = position,
+      bootstrap_options = c("striped")) |>
+    row_spec(0, bold = T,
+             color = "white",
+             background = "#327fac",
+             extra_css = "border: 2px solid #327fac;") |>
+    row_spec(dim(df)[1], extra_css = "border-bottom: 2px solid #327fac;") |>
+    column_spec(1, extra_css = "border-left: 2px solid #327fac;") |>
+    column_spec(dim(df)[2], extra_css = "border-right: 2px solid #327fac;")
+}
+```
+
+```{r load-libraries}
 library(gifski) # save gif file
 library(dplyr) # subsetting data
 library(ggplot2) # plotting data
@@ -13,18 +58,12 @@ library(gganimate) # animating data
 library(tidyverse) # cleaning data
 ```
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,
-                      results="asis",
-                      ragg.max_dim = 200000)
-```
-
-## Loading the NBA Data, originally taken from the [NBA Advanced Stats Site](https://www.nba.com/stats/alltime-leaders).
-```{r load-data, include=FALSE}
+### Loading the NBA Data, Source:[NBA Advanced Stats Site](https://www.nba.com/stats/alltime-leaders).
+```{r load-data, include=TRUE}
 nba_df <- read_csv("nba-top-10-career-scoring-leaders-yearly.csv")
 ```
 
-## Exploratory Data Analysis
+### Exploratory Data Analysis
 
 Selecting from a range can be done either by filtering and using the ">" and "=" 
 operator, or by nesting the filter and between functions:
@@ -34,12 +73,21 @@ nba_df_1960s_random_10 <- nba_df %>%
   filter(YearEnd >= 1960 & YearEnd <= 1969) %>% 
   sample_n(10)
 nba_df_1960s_random_10
+```
 
+```{r tbl1, echo=FALSE, results="asis"}
+knitr::kable(nba_df_1960s_random_10, format ="markdown")
+```
+
+```{r btw-funct}
 # or: same as above but with between() method
 nba_df_1960s_random_10 <- nba_df %>% 
   filter(between(YearEnd,1960,1969)) %>% 
   sample_n(10)
-nba_df_1960s_random_10
+```
+
+```{r tlb2, echo=FALSE, results="asis"}
+knitr::kable(nba_df_1960s_random_10, format ="markdown")
 ```
 
 The filter function can also be used on strings, for example, the code below
@@ -48,7 +96,10 @@ filters for Lebron James' stats:
 # filter() for just LeBron
 lebron <- nba_df %>% 
   filter(Player=="LeBron James")
-lebron
+```
+
+```{r tbl3, echo=FALSE, results="asis"}
+knitr::kable(lebron, format ="markdown")
 ```
 
 ```{r eda-summarise}
@@ -67,7 +118,9 @@ nba_df_sum <- nba_df %>%
   arrange(desc(TotPts)) 
 ```
 
-```{r}
+### Plotting the Data
+
+```{r plot, eval=FALSE}
 # saving animated plot as obj
 anim <- nba_df |> 
   # setting coordinates and filling by player
@@ -116,7 +169,4 @@ animate(anim,
         device = "ragg_png",
         renderer = gifski_renderer()
         )
-
-# saving as gif
-# anim_save("NBA-Top-10-Leading_Scorers-All-Time-1950-2022.gif")
 ```
