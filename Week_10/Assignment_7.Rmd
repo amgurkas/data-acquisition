@@ -1,0 +1,164 @@
+---
+title: "Insert Here"
+author: "Alyssa Gurkas"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    number_sections: false
+    toc_collapsed: true
+    toc_depth: 4
+---
+
+[Github Repository](https://github.com/amgurkas/data-acquisition/tree/main/Week_10/) 
+
+```{r set-chunk-options, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,      
+  results = "hide", 
+  warning = FALSE,  
+  error = FALSE,   
+  message = FALSE)
+```
+
+### Load Libraries
+```{r load-library}
+library(tidyverse)
+library(httr)
+library(jsonlite)
+```
+
+### Connecting to Twitter API 
+```{r twitter-api}
+# Retrieve bearer token from environment
+bearer_token <- Sys.getenv("BEARER_TOKEN")
+# Define token header and paste together (sprintf similar to paste0)
+headers <- c(`Authorization` = sprintf('Bearer %s', bearer_token))
+# Define parameters where max results is 500, querying for the string tariff, and then sorting results by relevance
+params <- list(
+    max_results = 100,
+    query = "tariffs",
+    sort_order = "relevancy"
+    
+)
+# defining url_handle for the recent tweets url
+url_handle <- "https://api.twitter.com/2/tweets/search/recent"
+# saving the response object 
+res <-
+  httr::GET(url = url_handle,
+            httr::add_headers(.headers = headers),
+            query = params)
+
+# Check response type
+http_type(res)
+# Check for errors
+http_error(res)
+
+# parsing the json
+recent_search_body <-
+  content(
+    res,
+    as = 'parsed',
+    type = 'application/json',
+    simplifyDataFrame = TRUE
+  )
+
+recent_text_body <- recent_search_body$data
+```
+### Loading the Tweet Eval Model
+```{r}
+# Retrieve bearer token from environment for HF Model 
+hf_bearer_token <- Sys.getenv("HF_TOKEN")
+
+get_sentiment <- function(tweet){
+# Get sentiment predictions
+  sent_res <- POST(
+    url = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment",
+    add_headers(Authorization = paste("Bearer", hf_bearer_token)),
+    content_type("application/json"),
+    body = toJSON(list(inputs = text), auto_unbox = TRUE)
+  )
+  
+sent_content <- fromJSON(rawToChar(sent_res$content))
+}
+```
+
+### Data Cleaning
+```{r}
+clean_text = function(rawtext)
+{
+  # convert to lower case
+  rawtext = tolower(rawtext)
+  # remove rt
+  rawtext = gsub("rt", "", rawtext)
+  # remove at
+  rawtext = gsub("@\\w+", "", rawtext)
+  # remove punctuation
+  rawtext = gsub("[[:punct:]]", "", rawtext)
+  # remove numbers
+  rawtext = gsub("[[:digit:]]", "", rawtext)
+  # remove links http
+  rawtext = gsub("http\\w+", "", rawtext)
+  # remove tabs
+  rawtext = gsub("[ |\t]{2,}", "", rawtext)
+  # remove blank spaces at the beginning
+  rawtext = gsub("^ ", "", rawtext)
+  # remove blank spaces at the end
+  rawtext = gsub(" $", "", rawtext)
+  # some other cleaning text
+  rawtext = gsub('https://','',rawtext)
+  rawtext = gsub('http://','',rawtext)
+  rawtext = gsub('[^[:graph:]]', ' ',rawtext)
+  rawtext = gsub('[[:punct:]]', '', rawtext)
+  rawtext = gsub('[[:cntrl:]]', '', rawtext)
+  rawtext = gsub('\\d+', '', rawtext)
+  rawtext = str_replace_all(rawtext,"[^[:graph:]]", " ")
+  return(rawtext)
+}
+
+cleaned_recent_text <- recent_text_body |> 
+  mutate(clean_text = clean_text(recent_text_body$text))
+```
+
+### Connecting to Sentiment Analysis Model 
+```{r}
+# Function to get sentiment predictions
+get_sentiment <- function(text) {
+  response <- POST(
+    url = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment",
+    add_headers(Authorization = paste("Bearer", hf_token)),
+    content_type("application/json"),
+    body = toJSON(list(inputs = text), auto_unbox = TRUE)
+  )
+  
+  if(status_code(response) == 200) {
+    content <- fromJSON(rawToChar(response$content))
+    return(content[[1]])
+  } else {
+    stop("Error in API request: ", rawToChar(response$content))
+  }
+}
+
+# Example usage
+tweet <- "You know who doesn't have to pay tariffs because they manufacture everything in the United States. Hollywood Product"
+sentiment_result <- get_sentiment(tweet)
+
+# Assuming you have a dataframe 'tweets_df' with a 'text' column
+# tweets_df$sentiment <- lapply(tweets_df$text, function(x) {
+#   tryCatch(get_sentiment(x), error = function(e) list(negative = NA, neutral = NA, positive = NA))
+# })
+
+# Extract scores to separate columns
+# tweets_df <- cbind(tweets_df, do.call(rbind, tweets_df$sentiment))
+
+```
+
+### Connecting to Sentiment Analysis Model 
+```{r}
+
+
+```
+
+
+
