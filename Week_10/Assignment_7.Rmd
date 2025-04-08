@@ -161,12 +161,6 @@ ggplot(data = sentiment_all_tweets, aes(x = element_id,
 # sentiment_result_ai <- sentiment_score(tweet)
 ```
 
-```{html}
-<br> 
-
-```
-
-
 ### Connecting to Sentiment Analysis Model 
 ```{r}
 
