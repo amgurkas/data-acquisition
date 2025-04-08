@@ -27,6 +27,7 @@ knitr::opts_chunk$set(echo = TRUE,
 library(tidyverse)
 library(httr)
 library(jsonlite)
+library(sentimentr)
 ```
 
 ### Connecting to Twitter API 
@@ -75,13 +76,22 @@ get_sentiment <- function(tweet){
 # Get sentiment predictions
   sent_res <- POST(
     url = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment",
-    add_headers(Authorization = paste("Bearer", hf_bearer_token)),
+    add_headers("Authorization" = paste("Bearer", hf_bearer_token)),
     content_type("application/json"),
-    body = toJSON(list(inputs = text), auto_unbox = TRUE)
+    body = toJSON(
+      list(
+        inputs = tweet
+      ),
+      auto_unbox = TRUE
+    )
   )
   
 sent_content <- fromJSON(rawToChar(sent_res$content))
 }
+
+tweet <- "You know who doesn't have to pay tariffs"
+sentiment_result <- get_sentiment(tweet)
+
 ```
 
 ### Data Cleaning
@@ -121,42 +131,52 @@ cleaned_recent_text <- recent_text_body |>
   mutate(clean_text = clean_text(recent_text_body$text))
 ```
 
-### Connecting to Sentiment Analysis Model 
+### Sentiment Exploratory Analysis with `sentimentr` package
 ```{r}
-# Function to get sentiment predictions
-get_sentiment <- function(text) {
-  response <- POST(
-    url = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment",
-    add_headers(Authorization = paste("Bearer", hf_token)),
-    content_type("application/json"),
-    body = toJSON(list(inputs = text), auto_unbox = TRUE)
-  )
-  
-  if(status_code(response) == 200) {
-    content <- fromJSON(rawToChar(response$content))
-    return(content[[1]])
-  } else {
-    stop("Error in API request: ", rawToChar(response$content))
-  }
-}
-
-# Example usage
+# Example with one tweet
 tweet <- "You know who doesn't have to pay tariffs because they manufacture everything in the United States. Hollywood Product"
 sentiment_result <- get_sentiment(tweet)
+sentiment_r_package <- sentiment(tweet)
+sentiment_all_tweets <- sentiment(cleaned_recent_text$clean_text)
 
-# Assuming you have a dataframe 'tweets_df' with a 'text' column
-# tweets_df$sentiment <- lapply(tweets_df$text, function(x) {
-#   tryCatch(get_sentiment(x), error = function(e) list(negative = NA, neutral = NA, positive = NA))
-# })
+summary <- sentiment_all_tweets |> 
+  summarise(
+    average_weighted_mixed_sentiment = average_weighted_mixed_sentiment(sentiment),
+    average_mean = average_mean(sentiment),
+    average = mean(sentiment),
+    sd = sd(sentiment),
+    iqr = IQR(sentiment)
+  )
 
-# Extract scores to separate columns
-# tweets_df <- cbind(tweets_df, do.call(rbind, tweets_df$sentiment))
+ggplot(data = sentiment_all_tweets, aes(x = element_id, 
+                            y = sentiment,
+                            color = "Tweets"))+
+    geom_point(alpha = .4)+
+    scale_color_manual(name = "", values=c("#FF6885", "white"))+
+    geom_smooth(se=FALSE)+
+    xlab("Sentence Order")+
+    ylab("Sentiment")
+
+# not enough CPU/RAM to use the ai tool
+# sentiment_result_ai <- sentiment_score(tweet)
+```
+
+```{html}
+<br> 
 
 ```
 
+
 ### Connecting to Sentiment Analysis Model 
 ```{r}
 
+
+cleaned_recent_text$text <- lapply(cleaned_recent_text$text, function(x))
+   get_sentiment(x), error = function(e) list(negative = NA, neutral = NA, positive = NA))
+ })
+
+# Extract scores to separate columns
+tweets_df <- cbind(tweets_df, do.call(rbind, tweets_df$sentiment))
 
 ```
 
