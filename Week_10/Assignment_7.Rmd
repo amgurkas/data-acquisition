@@ -165,6 +165,7 @@ ggplot(data = sentiment_all_tweets, aes(x = element_id,
     ylab("Sentiment")
 ```
 
+<<<<<<< HEAD
 ```{html}
 <br> 
 
