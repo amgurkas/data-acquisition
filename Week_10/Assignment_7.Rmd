@@ -1,5 +1,5 @@
 ---
-title: "Insert Here"
+title: "Sentiment Analysis"
 author: "Alyssa Gurkas"
 date: "`r Sys.Date()`"
 output: 
@@ -31,7 +31,9 @@ library(sentimentr)
 ```
 
 ### Connecting to Twitter API 
-```{r twitter-api}
+The code below connects to the Twitter API and returns posts from the last 
+seven days that match a search query. 
+```{r twitter-api, eval=FALSE}
 # Retrieve bearer token from environment
 bearer_token <- Sys.getenv("BEARER_TOKEN")
 # Define token header and paste together (sprintf similar to paste0)
@@ -65,6 +67,7 @@ recent_search_body <-
     simplifyDataFrame = TRUE
   )
 
+# df of tweet id, edit history of tweets, and text
 recent_text_body <- recent_search_body$data
 ```
 ### Loading the Tweet Eval Model
@@ -72,8 +75,9 @@ recent_text_body <- recent_search_body$data
 # Retrieve bearer token from environment for HF Model 
 hf_bearer_token <- Sys.getenv("HF_TOKEN")
 
+# creating get_sentiment funct.
 get_sentiment <- function(tweet){
-# Get sentiment predictions
+# Get sentiment predictions from the Roberta Base Sentiment Model
   sent_res <- POST(
     url = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment",
     add_headers("Authorization" = paste("Bearer", hf_bearer_token)),
@@ -88,10 +92,13 @@ get_sentiment <- function(tweet){
   
 sent_content <- fromJSON(rawToChar(sent_res$content))
 }
+```
 
+```{r testing-sentiment-funct}
+# example tweet
 tweet <- "You know who doesn't have to pay tariffs"
+# checking that the funct above works
 sentiment_result <- get_sentiment(tweet)
-
 ```
 
 ### Data Cleaning
@@ -156,9 +163,6 @@ ggplot(data = sentiment_all_tweets, aes(x = element_id,
     geom_smooth(se=FALSE)+
     xlab("Sentence Order")+
     ylab("Sentiment")
-
-# not enough CPU/RAM to use the ai tool
-# sentiment_result_ai <- sentiment_score(tweet)
 ```
 
 ```{html}
@@ -166,19 +170,53 @@ ggplot(data = sentiment_all_tweets, aes(x = element_id,
 
 ```
 
+```{r funct-all-cleaned-tweets}
+# Def batched function to apply get_sentiment() 
+get_sentiments_batch <- function(tweets, ids, delay = 1) {
+  results <- vector("list", length(tweets))  # Preallocate result list
+  
+  for (i in seq_along(tweets)) {
+    tweet <- tweets[i]
+    id <- ids[i]
+    
+    sentiment <- tryCatch({
+      get_sentiment(tweet)
+    }, error = function(e) {
+      list(negative = NA, neutral = NA, positive = NA)
+    })
+    
+    results[[i]] <- c(id = id, sentiment)
+    Sys.sleep(delay)
+  }
+  
+  return(do.call(rbind, lapply(results, as.data.frame)))
+}
 
-### Connecting to Sentiment Analysis Model 
-```{r}
-
-
-cleaned_recent_text$text <- lapply(cleaned_recent_text$text, function(x))
-   get_sentiment(x), error = function(e) list(negative = NA, neutral = NA, positive = NA))
- })
-
-# Extract scores to separate columns
-tweets_df <- cbind(tweets_df, do.call(rbind, tweets_df$sentiment))
-
+# incorporating 1 second delay; 0 = negative, 1= neutral, 2= positive
+sentiment_results <- get_sentiments_batch(
+                                          tweets = cleaned_recent_text$clean_text,
+                                          ids = cleaned_recent_text$id,
+                                          delay = 1
+                                          )
 ```
 
+```{r pivot-wider-sentiment-results}
+# 0 = negative, 1= neutral, 2= positive
+sentiment_results_wider <- sentiment_results |> 
+  pivot_wider(
+    names_from = label, 
+    values_from = score
+    ) |> 
+  left_join(recent_text_body |>  select(id, text), by = "id") |> 
+  rename(
+    "negative" = "LABEL_0",
+    "neutral" = "LABEL_1",
+    "positive" = "LABEL_2"
+  )
+```
+
+```{r summary-stats}
+summary_sentiment_results <- sentiment_results_wider |> 
+```
 
 
