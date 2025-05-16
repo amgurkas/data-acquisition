@@ -10,9 +10,12 @@ output:
     number_sections: false
     toc_collapsed: true
     toc_depth: 4
+    code_folding: show
 ---
 
 [Github Repository](https://github.com/amgurkas/data-acquisition/tree/main/Week_10/) 
+<br>
+Source: TweetNLP: Cutting-Edge Natural Language Processing for Social Media”. Jose Camacho-Collados, Kiamehr Rezaee, Talayeh Riahi, Asahi Ushio, et al. Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing (EMNLP): System Demonstrations [Link paper](https://arxiv.org/abs/2206.14774)
 
 ```{r set-chunk-options, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,      
@@ -28,12 +31,14 @@ library(tidyverse)
 library(httr)
 library(jsonlite)
 library(sentimentr)
+library(janitor)
 ```
 
 ### Connecting to Twitter API 
 The code below connects to the Twitter API and returns posts from the last 
-seven days that match a search query. 
-```{r twitter-api, eval=FALSE}
+seven days that match a search query. In the twitter query below, it searches
+for recent tweets that contain the word "tariff".
+```{r twitter-api}
 # Retrieve bearer token from environment
 bearer_token <- Sys.getenv("BEARER_TOKEN")
 # Define token header and paste together (sprintf similar to paste0)
@@ -70,8 +75,14 @@ recent_search_body <-
 # df of tweet id, edit history of tweets, and text
 recent_text_body <- recent_search_body$data
 ```
-### Loading the Tweet Eval Model
-```{r}
+
+### Loading the Tweet Evalulation Model
+The code below connects to the Roberta Base Sentiment model (documentation can be
+seen [here](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment?text=RT+%40Sojka4President%3A+You+know+who+doesn%E2%80%99t+have+to+pay+tariffs+because+they+manufacture+everything+in+the+United+States.+%5Cn%5CnHollywood+Product%E2%80%A6)).
+
+By developing the function `get_sentiment`, an individual tweet sentiment can be
+detected. 
+```{r get-sentiment-funct}
 # Retrieve bearer token from environment for HF Model 
 hf_bearer_token <- Sys.getenv("HF_TOKEN")
 
@@ -94,6 +105,7 @@ sent_content <- fromJSON(rawToChar(sent_res$content))
 }
 ```
 
+The code below tests the sentiment for one tweet:
 ```{r testing-sentiment-funct}
 # example tweet
 tweet <- "You know who doesn't have to pay tariffs"
@@ -102,7 +114,11 @@ sentiment_result <- get_sentiment(tweet)
 ```
 
 ### Data Cleaning
-```{r}
+To properly analyze tweets, the text has to be cleaned, and normalized so each
+tweet can be properly compared. To clean the tweets, the function `clean_text`, 
+is developed and applied to the 'recent_text_body' dataframe, creating a new
+column in the dataframe titled 'clean_text'.
+```{r clean-text-funct}
 clean_text = function(rawtext)
 {
   # convert to lower case
@@ -133,63 +149,34 @@ clean_text = function(rawtext)
   rawtext = str_replace_all(rawtext,"[^[:graph:]]", " ")
   return(rawtext)
 }
-
+# 
 cleaned_recent_text <- recent_text_body |> 
   mutate(clean_text = clean_text(recent_text_body$text))
 ```
 
-### Sentiment Exploratory Analysis with `sentimentr` package
-```{r}
-# Example with one tweet
-tweet <- "You know who doesn't have to pay tariffs because they manufacture everything in the United States. Hollywood Product"
-sentiment_result <- get_sentiment(tweet)
-sentiment_r_package <- sentiment(tweet)
-sentiment_all_tweets <- sentiment(cleaned_recent_text$clean_text)
-
-summary <- sentiment_all_tweets |> 
-  summarise(
-    average_weighted_mixed_sentiment = average_weighted_mixed_sentiment(sentiment),
-    average_mean = average_mean(sentiment),
-    average = mean(sentiment),
-    sd = sd(sentiment),
-    iqr = IQR(sentiment)
-  )
-
-ggplot(data = sentiment_all_tweets, aes(x = element_id, 
-                            y = sentiment,
-                            color = "Tweets"))+
-    geom_point(alpha = .4)+
-    scale_color_manual(name = "", values=c("#FF6885", "white"))+
-    geom_smooth(se=FALSE)+
-    xlab("Sentence Order")+
-    ylab("Sentiment")
-```
-
-<<<<<<< HEAD
-```{html}
-<br> 
-
-```
-
+To get the sentiments for all tweets in the dataframe 'recent_text_body', another 
+function is developed titled `get_sentiments_batch`, where each text goes through
+a loop and the sentiment is recorded. A delay is incorporated into the function
+to ensure the Roberta Base Sentiment API is not overwhelmed. 
 ```{r funct-all-cleaned-tweets}
-# Def batched function to apply get_sentiment() 
+# Create function with batching to apply get_sentiment() to all tweets
 get_sentiments_batch <- function(tweets, ids, delay = 1) {
-  results <- vector("list", length(tweets))  # Preallocate result list
-  
+  results <- vector("list", length(tweets))  # create empty result list
+  # iterate through each tweet
   for (i in seq_along(tweets)) {
     tweet <- tweets[i]
     id <- ids[i]
-    
+    # get the sentiment of the tweets 
     sentiment <- tryCatch({
       get_sentiment(tweet)
     }, error = function(e) {
       list(negative = NA, neutral = NA, positive = NA)
     })
-    
+    # record the sentiment results in the results list 
     results[[i]] <- c(id = id, sentiment)
     Sys.sleep(delay)
   }
-  
+  # bind the rows and save the results as a data frame
   return(do.call(rbind, lapply(results, as.data.frame)))
 }
 
@@ -201,8 +188,10 @@ sentiment_results <- get_sentiments_batch(
                                           )
 ```
 
+Then, the dataframe is pivoted wider so that each observation is a tweet with 
+the corresponding sentiment scores. 
 ```{r pivot-wider-sentiment-results}
-# 0 = negative, 1= neutral, 2= positive
+# pivot wider so each observation is a tweet with a corresponding sentiment scores
 sentiment_results_wider <- sentiment_results |> 
   pivot_wider(
     names_from = label, 
@@ -216,8 +205,130 @@ sentiment_results_wider <- sentiment_results |>
   )
 ```
 
+To better understand the sentiment scores as a whole, the summarize function can 
+be used to outline the mean, median, standard deviation, minimum and maximum 
+values, and interquartile range of the negative, neutral, and positive scores.
 ```{r summary-stats}
-summary_sentiment_results <- sentiment_results_wider |> 
+# mean, median, sd, min, max, iqr of for each sentiment type
+sentiment_roberta_base_summary <- sentiment_results_wider |> 
+  summarize(
+    mean_negative = mean(negative, na.rm = TRUE),
+    median_negative = median(negative, na.rm = TRUE),
+    sd_negative = sd(negative, na.rm = TRUE),
+    min_negative = min(negative, na.rm = TRUE),
+    max_negative = max(negative, na.rm = TRUE),
+    iqr_negative = IQR(negative, na.rm = TRUE),
+    mean_neutral = mean(neutral, na.rm = TRUE),
+    median_neutral = median(neutral, na.rm = TRUE),
+    sd_neutral = sd(neutral, na.rm = TRUE),
+    min_neutral = min(neutral, na.rm = TRUE),
+    max_neutral = max(neutral, na.rm = TRUE),
+    iqr_neutral = IQR(neutral, na.rm = TRUE),
+    mean_positive = mean(positive, na.rm = TRUE),
+    median_positive = median(positive, na.rm = TRUE),
+    sd_positive = sd(positive, na.rm = TRUE),
+    min_positive = min(positive, na.rm = TRUE),
+    max_positive = max(positive, na.rm = TRUE),
+    iqr_positive = IQR(positive, na.rm = TRUE)
+  )
 ```
 
+The data is then pivoted wider so that each sentiment type and the proportion
+of the sentiment type is recorded.
+```{r sentiment-pivot-longer}
+# pivoting longer to analyze all sentiment types
+sentiment_long <- sentiment_results_wider %>%
+  pivot_longer(cols = c(negative, neutral, positive),
+               names_to = "sentiment_type",
+               values_to = "proportion") |> 
+  mutate(sentiment_type = case_when(
+    sentiment_type == "negative" ~ "Negative",
+    sentiment_type == "neutral"  ~ "Neutral",
+    sentiment_type == "positive" ~ "Positive"
+  )) |> 
+  clean_names("title")
+  
+```
 
+To better understand the distribution of the sentiment types for the tweets, a 
+histogram can be used to visualize distribution by sentiment type.
+```{r histogram}
+ggplot(sentiment_long, aes(x = Proportion, fill = `Sentiment Type`)) +
+  geom_histogram(binwidth = 0.05, color = "black", alpha = 0.7) +
+  facet_wrap(~ `Sentiment Type`, ncol = 1, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "Histogram of Sentiment Proportions",
+       x = "Proportion", y = "Tweet Count") 
+```
+
+A density plot can also be used to better understand the distribution of the 
+sentiment detected for the sample.
+```{r}
+ggplot(sentiment_long, aes(x = Proportion, color = `Sentiment Type`, fill = `Sentiment Type`)) +
+  geom_density(alpha = 0.3) +
+  theme_minimal() +
+  labs(title = "Density Plot of Sentiment Proportions",
+       x = "Proportion", y = "Density")
+```
+A boxplot may also be used to better understand the distribution, according to 
+the plot below, neutral sentiment most frequently detected in the tweets.
+```{r boxplots}
+ggplot(sentiment_long, aes(x = `Sentiment Type`, y = Proportion, fill = `Sentiment Type`)) +
+  geom_boxplot(alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Boxplot of Sentiment Proportions",
+       x = "Sentiment Type", y = "Proportion")
+```
+
+### Sentiment Exploratory Analysis with `sentimentr` package
+Another way to measure sentiment analysis is through the `sentimentr` package,
+and by using the built in `sentiment_by` function. To compare the results from 
+the `sentimentr` package and the Roberta Base Sentiment, a left_join() is used
+to join the dataframes 'sentimentr_results' and 'roberta_net_sentiment' by the
+tweet id. Then, a new column, titled 'roberta_net_sentiment' is created by 
+taking the positive sentiment value minus the negative sentiment value.
+```{r sentimentr}
+# sentiment analysis with sentimentr package
+sentimentr_results <- sentiment_by(cleaned_recent_text$clean_text, 
+                                      by = cleaned_recent_text$id)
+
+sentiment_compare <- sentimentr_results |> 
+  left_join(sentiment_results_wider,
+            by="id") |> 
+  mutate(roberta_net_sentiment = positive - negative) |> 
+  select(-sd)
+```
+
+To understand the relationship between the two senitment types, a scatterplot can 
+be used to visualize the data:
+```{r scatterplot-w-line-of-best-fit}
+ggplot(sentiment_compare, aes(x = roberta_net_sentiment, y = ave_sentiment)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  scale_y_continuous(limits=c(-1,1))+
+  theme_minimal() +
+  labs(title = "Comparison of Roberta and sentimentr Scores",
+       x = "Roberta Base Sentiment Result",
+       y = "sentimentr Sentiment Result")
+```
+
+To better understand the correlation, the slope of the best fit line is 
+calculated using the lm() function. The slope of a regression line indicates how 
+the response variable changes on average for every unit change in the 
+predictor variable. It also shows the relationsip of the variables. The positive
+slope means that as the predictor variable increases, the response 
+variable also increases. 
+```{r calc-slope}
+lm(data=sentiment_compare,
+   formula = ave_sentiment~roberta_net_sentiment)
+```
+
+Another way to measure the relationship between the variables is the correlation.
+```{r correlation}
+cor(sentiment_compare$roberta_net_sentiment, sentiment_compare$ave_sentiment, use = "complete.obs")
+```
+
+## Conclusion
+The results are slightly different. This means that further analysis and research
+should be conducted to better understand how the models differ and which result
+may be more accurate. 
